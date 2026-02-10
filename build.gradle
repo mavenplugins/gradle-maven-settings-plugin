@@ -31,20 +31,16 @@ java {
     targetCompatibility = JavaVersion.VERSION_11
 }
 
-pluginBundle {
-    website = 'https://github.com/rmanibus/gradle-maven-settings-plugin'
-    vcsUrl = 'https://github.com/rmanibus/gradle-maven-settings-plugin'
-    description = 'Gradle plugin for exposing Maven settings file configuration to Gradle project.'
-    tags = ['settings', 'maven']
-
-}
-
 gradlePlugin {
+    website = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
+    vcsUrl = 'https://github.com/mavenplugins/gradle-maven-settings-plugin.git'
 
     plugins {
         mavenSettings {
-            id = 'io.github.rmanibus.maven-settings'
+            id = 'io.github.mavenplugins.maven-settings'
             displayName = 'Maven Settings Plugin'
+            description = 'Gradle plugin for exposing Maven settings file configuration to Gradle project.'
+            tags = ['settings', 'maven']
             implementationClass = 'net.linguica.gradle.maven.settings.MavenSettingsPlugin'
         }
     }
