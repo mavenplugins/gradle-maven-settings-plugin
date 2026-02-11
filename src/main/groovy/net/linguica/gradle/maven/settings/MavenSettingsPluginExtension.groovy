@@ -16,10 +16,12 @@
 
 package net.linguica.gradle.maven.settings
 
+import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
 import org.gradle.api.Project
 
 class MavenSettingsPluginExtension {
-    private Project project
+
+    private final IGradlePluginScopeUtilizer scopeUtilizer;
 
     /**
      * Name of settings file to use. String is evaluated using {@link org.gradle.api.Project#file(java.lang.Object)}.
@@ -38,11 +40,11 @@ class MavenSettingsPluginExtension {
      */
     boolean exportGradleProps = true
 
-    MavenSettingsPluginExtension(Project project) {
-        this.project = project
+    MavenSettingsPluginExtension(IGradlePluginScopeUtilizer scopeUtilizer) {
+        this.scopeUtilizer = scopeUtilizer
     }
 
     public File getUserSettingsFile() {
-        return project.file(userSettingsFileName)
+        return scopeUtilizer.scope instanceof Project ? ((Project) scopeUtilizer.scope).file(userSettingsFileName) : new File(userSettingsFileName)
     }
 }
