@@ -3,10 +3,22 @@
 [![Apache License](https://img.shields.io/github/license/mavenplugins/gradle-maven-settings-plugin?label=License)](./LICENSE.txt)
 [![CI](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml)
 
-This Gradle plugin provides a migration path for projects coming from a Maven ecosystem. It exposes standard Maven
-configuration located in [settings files](http://maven.apache.org/settings.html) to your Gradle project. This allows
-projects to continue to leverage functionality provided by Maven such as mirrors as well use existing
-settings configuration to store encrypted repository authentication credentials.
+This Gradle plugin provides a migration path for projects coming from a Maven ecosystem.
+It exposes standard Maven configurations located in [settings files](http://maven.apache.org/settings.html) to your
+Gradle project.
+
+The plugin has been originally forked from https://github.com/rmanibus/gradle-maven-settings-plugin.
+
+## Enhanced Features
+
+- Can be applied to Gradle Settings and Project scopes.
+- Expose properties defined in Maven settings files to the Gradle scope.
+- Apply repository credentials defined in Maven settings files to Gradle:
+    - DependencyResolution repositories - Settings and Project scopes.
+    - PluginManagement repositories - Settings scope only.
+    - Publishing repositories - Settings and Project scopes.
+- Apply mirror definitions defined in Maven settings files to the Gradle scope.
+- Log output enhanced to provide better visibility into the plugin's actions.
 
 ## Usage
 
