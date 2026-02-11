@@ -37,11 +37,24 @@ import java.io.File;
  * @author Mark Vieira
  */
 public class LocalMavenSettingsLoader {
+
+    /**
+     * The global settings file is located in the M2_HOME environment variable. This is the same location used by the Maven CLI.
+     */
     public static final File GLOBAL_SETTINGS_FILE = new File(System.getenv("M2_HOME"), "conf/settings.xml");
+
+    /**
+     * The local user settings file is located in the user's home directory. This is the same location used by the Maven CLI.
+     */
     public static final String SETTINGS_SECURITY_FILE_LOCATION = System.getProperty("user.home") + "/.m2/settings-security.xml";
 
     private final MavenSettingsPluginExtension extension;
 
+    /**
+     * Creates a new instance of {@link LocalMavenSettingsLoader}.
+     *
+     * @param extension The plugin extension containing configuration for loading settings
+     */
     public LocalMavenSettingsLoader(MavenSettingsPluginExtension extension) {
         this.extension = extension;
     }
