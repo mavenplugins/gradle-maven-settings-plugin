@@ -21,13 +21,13 @@ import org.apache.maven.settings.Profile
 import org.apache.maven.settings.Server
 import org.junit.Test
 
-import static org.junit.Assert.*
 import static org.hamcrest.Matchers.*
+import static org.junit.Assert.*
 
-class MavenSettingsPluginTest extends AbstractMavenSettingsTest {
+class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
     @Test
-    void applyMavenSettingsPlugin() {
+    void applyMavenSettingsProjectPlugin() {
         project.with {
             apply plugin: 'io.github.mavenplugins.maven-settings'
         }
@@ -241,7 +241,7 @@ class MavenSettingsPluginTest extends AbstractMavenSettingsTest {
         withSettings {
             servers.add new Server(id: 'central', username: 'first.last', password: 'secret')
         }
-        
+
         addPluginWithSettings()
 
         project.with {
