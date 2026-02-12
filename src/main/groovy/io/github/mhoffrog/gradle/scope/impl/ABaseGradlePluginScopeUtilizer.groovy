@@ -79,13 +79,13 @@ abstract class ABaseGradlePluginScopeUtilizer<T extends ExtensionAware> implemen
     }
 
     @Override
-    RepositoryHandler getPushRepositories() {
+    RepositoryHandler getPublishingRepositories() {
         return getExtensions().findByType(PublishingExtension)?.repositories
     }
 
     @Override
-    boolean isPushRepositoriesConfigured() {
-        RepositoryHandler repositories = getPushRepositories()
+    boolean isPublishingRepositoriesConfigured() {
+        RepositoryHandler repositories = getPublishingRepositories()
         return repositories != null && !repositories.empty
     }
 
