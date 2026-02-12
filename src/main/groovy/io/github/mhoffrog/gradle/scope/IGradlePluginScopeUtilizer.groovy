@@ -88,18 +88,18 @@ interface IGradlePluginScopeUtilizer<T> {
     boolean isRepositoriesConfigured()
 
     /**
-     * Gets the repository handler for the Gradle plugin scope push repositories.
+     * Gets the repository handler for the Gradle plugin scope publishing repositories.
      *
-     * @return the repository handler for the Gradle plugin scope push repositories.
+     * @return the repository handler for the Gradle plugin scope publishing repositories.
      */
-    RepositoryHandler getPushRepositories()
+    RepositoryHandler getPublishingRepositories()
 
     /**
-     * Checks if push repositories are configured for the Gradle plugin scope.
+     * Checks if publishing repositories are configured for the Gradle plugin scope.
      *
-     * @return true if push repositories are configured for the Gradle plugin scope, false otherwise.
+     * @return true if publishing repositories are configured for the Gradle plugin scope, false otherwise.
      */
-    boolean isPushRepositoriesConfigured()
+    boolean isPublishingRepositoriesConfigured()
 
     /**
      * Gets the repository handler for the Gradle plugin management repositories.

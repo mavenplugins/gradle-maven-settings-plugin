@@ -66,14 +66,14 @@ abstract class AbstractMavenSettingsPlugin {
             activateProfiles(scopeUtilizer, extension)
             if (!scopeUtilizer.repositoriesConfigured
                     && !scopeUtilizer.pluginManagementRepositoriesConfigured
-                    && !scopeUtilizer.pushRepositoriesConfigured) {
+                    && !scopeUtilizer.publishingRepositoriesConfigured) {
                 logger.warn("${LOG_PREFIX} No repositories configured in this scope. No repo credentials to apply.")
             } else {
                 registerMirrors(scopeUtilizer.repositories)
                 registerMirrors(scopeUtilizer.pluginManagementRepositories)
                 applyRepoCredentials('PluginManagement', scopeUtilizer.pluginManagementRepositories)
                 applyRepoCredentials('DependencyResolution', scopeUtilizer.repositories)
-                applyRepoCredentials('Publishing', scopeUtilizer.pushRepositories)
+                applyRepoCredentials('Publishing', scopeUtilizer.publishingRepositories)
             }
         }
     }
