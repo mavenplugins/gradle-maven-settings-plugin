@@ -20,6 +20,12 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 - Apply mirror definitions defined in Maven settings files to the Gradle scope.
 - Log output enhanced to provide better visibility into the plugin's actions.
 
+### Compatibility
+
+- Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `8.14.4`.
+- Java: The plugin is compatible with `Java 8` and later.
+- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies to Maven `3.9.6`
+
 ## Usage
 
 <!-- This plugin is hosted on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.mavenplugins.maven-settings). -->
@@ -61,6 +67,19 @@ all repositories except for the repository with the name 'myRepo'.
 The plugin will attempt to apply credentials located in `<server>` elements to appropriate Maven repository
 definitions in your build script. This is done by matching the `<id>` element in the `settings.xml` file to the `name`
 property of the repository definition.
+
+In a `settings.gradle` file:
+
+    dependencyResolutionManagement {
+        repositories {
+            maven {
+                name = 'myRepo' // should match <id>myRepo</id> of appropriate <server> in settings.xml
+                url = 'https://intranet.foo.org/repo'
+            }
+        }
+    }
+
+In a `build.gradle` file:
 
     repositories {
         maven {
@@ -109,3 +128,9 @@ properties are available.
 * `activeProfiles` - List of profile ids to treat as active.
 * `exportGradleProps` - Flag indicating whether or not Gradle project properties should be exported for the purposes of
   settings file property interpolation and profile activation. This defaults to `true`.
+* `mirrorExclusions` - List of repository names to be excluded from applying a mirror definition from settings.xml.
+  This defaults to `['Gradle Central Plugin Repository','Google','MavenLocal']`.
+* `defaultMirrorExclusions` - Read only property representing the default list of repository names to be excluded from
+  applying a mirror definition from settings.xml.
+  This is `['Gradle Central Plugin Repository','Google','MavenLocal']` and is supposed to be used to
+  extend the `mirrorExclusions` property including its default values if necessary.

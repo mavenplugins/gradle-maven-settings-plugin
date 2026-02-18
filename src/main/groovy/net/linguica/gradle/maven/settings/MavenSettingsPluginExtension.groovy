@@ -18,10 +18,20 @@ package net.linguica.gradle.maven.settings
 
 import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
 import org.gradle.api.Project
+import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler
 
 class MavenSettingsPluginExtension {
 
     private final IGradlePluginScopeUtilizer scopeUtilizer;
+
+    /**
+     * List repo names to exclude from mirror application by default.
+     */
+    private static final List<String> DEFAULT_MIRROR_EXCLUSIONS = [
+            DefaultRepositoryHandler.GRADLE_PLUGIN_PORTAL_REPO_NAME,
+            DefaultRepositoryHandler.GOOGLE_REPO_NAME,
+            DefaultRepositoryHandler.DEFAULT_MAVEN_LOCAL_REPO_NAME
+    ]
 
     /**
      * Name of settings file to use. String is evaluated using {@link org.gradle.api.Project#file(java.lang.Object)}.
@@ -35,6 +45,12 @@ class MavenSettingsPluginExtension {
     String[] activeProfiles = []
 
     /**
+     * List of repository names to exclude from mirror application.
+     * Defaults to {@link #DEFAULT_MIRROR_EXCLUSIONS}.
+     */
+    List<String> mirrorExclusions = getDefaultMirrorExclusions()
+
+    /**
      * Flag indicating whether or not Gradle project properties should be exported for the purposes of settings file
      * property interpolation and profile activation. Defaults to true.
      */
@@ -46,5 +62,12 @@ class MavenSettingsPluginExtension {
 
     public File getUserSettingsFile() {
         return scopeUtilizer.scope instanceof Project ? ((Project) scopeUtilizer.scope).file(userSettingsFileName) : new File(userSettingsFileName)
+    }
+
+    /**
+     * Return a copy of the default mirror exclusions list, to prevent accidental modification of the original list.
+     */
+    public static List<String> getDefaultMirrorExclusions() {
+        return new ArrayList(DEFAULT_MIRROR_EXCLUSIONS)
     }
 }

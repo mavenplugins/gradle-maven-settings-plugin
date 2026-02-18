@@ -45,13 +45,21 @@ import java.util.Map.Entry
 abstract class AbstractMavenSettingsPlugin {
     public static final String MAVEN_SETTINGS_EXTENSION_NAME = "mavenSettings"
 
-    private static final String LOG_PREFIX = "MavenSettingsPlugin:";
+    private static final String LOG_PREFIX;
 
     private org.apache.maven.settings.Settings mavenSettings
 
     private IGradlePluginScopeUtilizer scopeUtilizer
 
     private Logger logger;
+
+    static {
+        final Properties properties = new Properties()
+        AbstractMavenSettingsPlugin.class.getResource('/maven-settings-plugin-expanded.properties').withInputStream {
+            properties.load(it)
+        }
+        LOG_PREFIX = "MavenSettingsPlugin v${properties['plugin.version']}:"
+    }
 
     void apply(IGradlePluginScopeUtilizer scopeUtilizer) {
         this.scopeUtilizer = scopeUtilizer
@@ -69,8 +77,8 @@ abstract class AbstractMavenSettingsPlugin {
                     && !scopeUtilizer.publishingRepositoriesConfigured) {
                 logger.warn("${LOG_PREFIX} No repositories configured in this scope. No repo credentials to apply.")
             } else {
-                registerMirrors(scopeUtilizer.repositories)
-                registerMirrors(scopeUtilizer.pluginManagementRepositories)
+                registerMirrors(extension, scopeUtilizer.pluginManagementRepositories)
+                registerMirrors(extension, scopeUtilizer.repositories)
                 applyRepoCredentials('PluginManagement', scopeUtilizer.pluginManagementRepositories)
                 applyRepoCredentials('DependencyResolution', scopeUtilizer.repositories)
                 applyRepoCredentials('Publishing', scopeUtilizer.publishingRepositories)
@@ -122,12 +130,12 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void registerMirrors(final RepositoryHandler repositories) {
+    private void registerMirrors(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
         Mirror globalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').contains('*') }
         if (globalMirror != null) {
             logger.info("${LOG_PREFIX} Found global mirror in settings.xml. Replacing Maven repositories with mirror " +
                     "located at ${globalMirror.url}")
-            createMirrorRepository(repositories, globalMirror)
+            createMirrorRepository(extension, repositories, globalMirror)
             return
         }
 
@@ -135,7 +143,7 @@ abstract class AbstractMavenSettingsPlugin {
         if (externalMirror != null) {
             logger.info("${LOG_PREFIX} Found external mirror in settings.xml. Replacing non-local Maven repositories " +
                     "with mirror located at ${externalMirror.url}.")
-            createMirrorRepository(repositories, externalMirror) { MavenArtifactRepository repo ->
+            createMirrorRepository(extension, repositories, externalMirror) { MavenArtifactRepository repo ->
                 // only match repositories not on localhost and not file based
                 if (repo.url.scheme == 'file') {
                     return false
@@ -155,7 +163,7 @@ abstract class AbstractMavenSettingsPlugin {
         if (centralMirror != null) {
             logger.info("${LOG_PREFIX} Found central mirror in settings.xml. Replacing Maven Central repository with " +
                     "mirror located at ${centralMirror.url}.")
-            createMirrorRepository(repositories, centralMirror) { MavenArtifactRepository repo ->
+            createMirrorRepository(extension, repositories, centralMirror) { MavenArtifactRepository repo ->
                 ArtifactRepositoryContainer.MAVEN_CENTRAL_URL.startsWith(repo.url.toString())
             }
         }
@@ -174,17 +182,24 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void createMirrorRepository(RepositoryHandler repositories, Mirror mirror) {
-        createMirrorRepository(repositories, mirror) { true }
+    private void createMirrorRepository(MavenSettingsPluginExtension extension, RepositoryHandler repositories, Mirror mirror) {
+        createMirrorRepository(extension, repositories, mirror) { true }
     }
 
-    private void createMirrorRepository(RepositoryHandler repositories, Mirror mirror, Closure<Boolean> predicate) {
-        List<String> excludedRepositoryNames = mirror.mirrorOf.split(',').findAll { it.startsWith("!") }.collect { it.substring(1) }
+    private void createMirrorRepository(MavenSettingsPluginExtension extension, RepositoryHandler repositories, Mirror mirror, Closure<Boolean> predicate) {
+        List<String> excludedRepositoryNames = mirror.mirrorOf.split(',').collect { it.trim() }.findAll { it.startsWith("!") }.collect { it.substring(1) }
         List toRemove = []
         repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository && repo.name != ArtifactRepositoryContainer.DEFAULT_MAVEN_LOCAL_REPO_NAME
-                    && repo.url != URI.create(mirror.url) && predicate(repo) && !excludedRepositoryNames.contains(repo.getName())) {
-                toRemove.add(repo)
+                    && repo.url != URI.create(mirror.url) && predicate(repo)) {
+                if (excludedRepositoryNames.contains(repo.name)) {
+                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by mirrorOf '${mirror.mirrorOf}'. Skipping.")
+                } else if (extension.mirrorExclusions.contains(repo.name)) {
+                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
+                } else {
+                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
+                    toRemove.add(repo)
+                }
             }
         }
 

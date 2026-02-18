@@ -33,6 +33,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+processResources {
+    filesMatching("**/*-expanded.properties") {
+        expand project.properties
+    }
+}
+
 // Logger var for usage within other definition scopes
 Logger projectLogger = project.logger
 
