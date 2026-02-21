@@ -36,6 +36,7 @@ on:
           - "ALL"
           - active
           - deleted
+          - disabled_fork
           - disabled_inactivity
           - disabled_manually
       delete_run_by_conclusion_pattern:
