@@ -1,4 +1,6 @@
 # Gradle Maven settings plugin
+[![Apache License](https://img.shields.io/github/license/mavenplugins/gradle-maven-settings-plugin?label=License)](./LICENSE.txt)
+[![CI](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml)
 
 This Gradle plugin provides a migration path for projects coming from a Maven ecosystem. It exposes standard Maven
 configuration located in [settings files](http://maven.apache.org/settings.html) to your Gradle project. This allows 
