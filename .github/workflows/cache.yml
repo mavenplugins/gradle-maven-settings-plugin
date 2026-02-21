@@ -1,0 +1,15 @@
+name: Clear cache
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # every day at 3 AM
+  workflow_dispatch:
+
+jobs:
+  clear:
+    name: Delete all caches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear caches
+        #uses: easimon/wipe-cache@v2
+        uses: GHCICD/wipe-cache@v2
