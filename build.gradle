@@ -1,7 +1,8 @@
 plugins {
     id 'groovy'
     id 'maven-publish'
-    id "com.gradle.plugin-publish" version "2.0.0"
+    id 'com.gradle.plugin-publish' version '2.0.0'
+    id 'org.jreleaser' version '1.22.0'
 }
 
 ext {
@@ -29,6 +30,68 @@ dependencies {
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+boolean isReleaseBuild = !project.version.endsWith("-SNAPSHOT")
+String stagingDeploySubDir = 'staging-deploy'
+publishing {
+    repositories {
+        //mavenLocal()
+        maven {
+            //name = 'Local jReleaser staging repo'
+            url = uri(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile)
+        }
+    }
+}
+
+jreleaser {
+    // Disable github release creation by jreleaser
+    release {
+        github {
+            enabled = false
+        }
+    }
+
+    // Signing required for Maven Central uploads
+    // Env variables to be provided for signing:
+    //   JRELEASER_GPG_PASSPHRASE: ${{ secrets.<secret_name> }}
+    //   JRELEASER_GPG_SECRET_KEY: ${{ secrets.<secret_name> }}
+    //   JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.<secret_name> }}
+    signing {
+       pgp {
+           active = 'ALWAYS'
+           armored = true
+       }
+    }
+
+    // Env variables to be provided for Maven Central deployment:
+    //   JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.<secret_name> }}
+    //   JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.<secret_name> }}
+    //   JRELEASER_NEXUS2_USERNAME: ${{ secrets.<secret_name> }}
+    //   JRELEASER_NEXUS2_PASSWORD: ${{ secrets.<secret_name> }}
+    //   or JRELEASER_NEXUS2_TOKEN: ${{ secrets.<secret_name> }}
+    deploy {
+        maven {
+            mavenCentral {
+                'release-deploy' {
+                    active = 'RELEASE'
+                    url = 'https://central.sonatype.com/api/v1/publisher'
+                    stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
+                }
+            }
+            nexus2 {
+                'snapshot-deploy' {
+                    active = 'SNAPSHOT'
+                    snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots/'
+                    applyMavenCentralRules = true
+                    snapshotSupported = true
+                    closeRepository = true
+                    releaseRepository = true
+                    stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
+                }
+            }
+        }
+    }
 }
 
 gradlePlugin {
