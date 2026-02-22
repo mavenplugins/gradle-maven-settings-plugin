@@ -1,0 +1,76 @@
+# Inspired by https://github.com/bright/spring-modulith-gcp/blob/main/.github/workflows/release.yml
+name: Deploy to MavenCentral
+
+on:
+  workflow_dispatch:
+#    inputs:
+#      version:
+#        description: 'Release version'
+#        required: true
+#        default: '0.1.0'
+#      next_version:
+#        description: 'Next development version'
+#        required: true
+#        default: '0.1.1-SNAPSHOT'
+
+permissions:
+  #contents: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+#        with:
+#          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: zulu
+          cache: gradle
+
+#      - name: Setup Gradle
+#        uses: gradle/actions/setup-gradle@v5
+
+#      - name: Update version
+#        run: |
+#          sed -i "s/version = \".*\"/version = \"${{ github.event.inputs.version }}\"/g" build.gradle.kts
+#          sed -i "s/:[0-9]\+\.[0-9]\+\.[0-9]\+/:${{ github.event.inputs.version }}/g" README.md
+#          sed -i "s/<version>[0-9]\+\.[0-9]\+\.[0-9]\+<\/version>/<version>${{ github.event.inputs.version }}<\/version>/g" README.md
+#
+#          git config --global user.email "github-actions@github.com"
+#          git config --global user.name "GitHub Actions"
+#
+#          if [[ -n $(git status --porcelain) ]]; then
+#            git commit -am "Release version ${{ github.event.inputs.version }}"
+#            git push origin main
+#          fi
+
+      - name: Build and test
+        run: ./gradlew build -S
+
+      - name: Publish to Local Maven Staging
+        run: ./gradlew publish -S --info
+
+      - name: Deploy
+        env:
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.OSSRH_GPG_PUBLIC_KEY }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: ./gradlew jreleaserDeploy -S --info
+
+#      - name: Update to next development version
+#        run: |
+#          sed -i "s/version = \".*\"/version = \"${{ github.event.inputs.next_version }}\"/g" build.gradle.kts
+#          git commit -am "Prepare for next development version ${{ github.event.inputs.next_version }}"
+#          git push origin main
