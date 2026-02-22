@@ -1,7 +1,8 @@
 plugins {
     id 'groovy'
     id 'maven-publish'
-    id 'com.gradle.plugin-publish' version '2.0.0'
+    //id 'java-gradle-plugin'
+    id 'com.gradle.plugin-publish' version '2.0.0' // implies 'java-gradle-plugin'
     id 'org.jreleaser' version '1.22.0'
 }
 
@@ -32,13 +33,83 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+// Logger var for usage within other definition scopes
+Logger projectLogger = project.logger
+
 boolean isReleaseBuild = !project.version.endsWith("-SNAPSHOT")
+// Directory for staging deploy artifacts (e.g. plugin marker artifact and plugin .jar artifact)
+// before being picked up by jreleaser for deployment to Maven Central
 String stagingDeploySubDir = 'staging-deploy'
+
+// Common Gradle Plugin properties for consistent usage
+// within gradlePlugin and publishing configuration
+String pluginDisplayName = 'Maven Settings Plugin'
+String pluginDescription = 'Gradle plugin for exposing Maven settings file configuration to Gradle project.'
+String pluginWebSiteUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
+String pluginOrganization = 'mavenplugins'
+String pluginOrganizationUrlAsString = 'https://github.com/mavenplugins'
+// Note: repo URL must not end with '.git' and must not end with '/'
+String pluginRepoUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
+
 publishing {
+    // Enhance all publications with metadata for Maven Central
+    // (e.g. pluginMaven, mavenSettingsPluginMarkerMaven, and any custom publications)
+    // Note: afterEvaluate is necessary since java-gradle-plugin creates its publications in an afterEvaluate callback
+    afterEvaluate {
+        publications {
+            //maven(MavenPublication) {
+            // from components.java
+            withType(MavenPublication) {
+                // Enhance/update metadata to all publications (including mavenPlugin publication created by java-gradle-plugin)
+                projectLogger.info("###### Common customization of publication ${it.name} ...")
+                pom {
+                    name = "${pluginDisplayName}"
+                    description = "${pluginDescription}"
+                    url = "${pluginWebSiteUrlAsString}"
+                    licenses {
+                        license {
+                            name = 'Apache Software License, Version 2.0'
+                            url = "${pluginRepoUrlAsString}/blob/master/LICENSE.txt"
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = "${pluginOrganization}"
+                            // Let Maven Central Search show 'Public Project' as known contributors tag
+                            name = 'Public Project'
+                            url = "${pluginRepoUrlAsString}/graphs/contributors"
+                            organization = "${pluginOrganization}"
+                            organizationUrl = "${pluginOrganizationUrlAsString}/"
+                        }
+                    }
+                    scm {
+                        connection = "scm:git:${pluginRepoUrlAsString}.git"
+                        developerConnection = "scm:git:${pluginRepoUrlAsString}.git"
+                        url = "${pluginWebSiteUrlAsString}"
+                    }
+                }
+            } // end of withType(MavenPublication)
+            pluginMaven {
+                // Customize plugin .jar related publication here
+                projectLogger.info("###### Specific customization of publication ${name} ...")
+                pom {
+                    name = "${pluginDisplayName} (plugin jar artifact)"
+                }
+            }
+            // <plugin name from gradlePlugin.plugins configuration>PluginMarkerMaven
+            mavenSettingsPluginMarkerMaven {
+                // Customize marker publication of mavenSettings here
+                projectLogger.info("###### Specific customization of publication ${name} ...")
+                pom {
+                    name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
+                }
+            }
+        }
+    }
     repositories {
         //mavenLocal()
         maven {
-            //name = 'Local jReleaser staging repo'
+            name = 'localJReleaserStaging'
             url = uri(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile)
         }
     }
@@ -58,10 +129,10 @@ jreleaser {
     //   JRELEASER_GPG_SECRET_KEY: ${{ secrets.<secret_name> }}
     //   JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.<secret_name> }}
     signing {
-       pgp {
-           active = 'ALWAYS'
-           armored = true
-       }
+        pgp {
+            active = 'ALWAYS'
+            armored = true
+        }
     }
 
     // Env variables to be provided for Maven Central deployment:
@@ -95,14 +166,20 @@ jreleaser {
 }
 
 gradlePlugin {
-    website = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
-    vcsUrl = 'https://github.com/mavenplugins/gradle-maven-settings-plugin.git'
+    website = "${pluginWebSiteUrlAsString}"
+    vcsUrl = "${pluginRepoUrlAsString}"
 
     plugins {
+        // The plugin name - 'mavenSettings' in this case - is used to generate two publications:
+        //   1. publication 'mavenSettingsPluginMarkerMaven' for the marker artifact
+        //   2. publication 'pluginMaven' for the plugin .jar artifact
+        // Note: Further customization of the generated publications (e.g. adding metadata to POM)
+        // is done in the publishing block below.
+        // It must be configured in afterEvaluate block since the publications are generated by java-gradle-plugin in an afterEvaluate callback.
         mavenSettings {
             id = 'io.github.mavenplugins.maven-settings'
-            displayName = 'Maven Settings Plugin'
-            description = 'Gradle plugin for exposing Maven settings file configuration to Gradle project.'
+            displayName = "${pluginDisplayName}"
+            description = "${pluginDescription}"
             tags = ['settings', 'maven']
             implementationClass = 'net.linguica.gradle.maven.settings.MavenSettingsPlugin'
         }
