@@ -36,7 +36,9 @@ java {
 // Logger var for usage within other definition scopes
 Logger projectLogger = project.logger
 
-boolean isReleaseBuild = !project.version.endsWith("-SNAPSHOT")
+// Unused variable for potential future use in conditional logic (e.g. jreleaser release configuration)
+//boolean isReleaseBuild = !project.version.endsWith("-SNAPSHOT")
+
 // Directory for staging deploy artifacts (e.g. plugin marker artifact and plugin .jar artifact)
 // before being picked up by jreleaser for deployment to Maven Central
 String stagingDeploySubDir = 'staging-deploy'
