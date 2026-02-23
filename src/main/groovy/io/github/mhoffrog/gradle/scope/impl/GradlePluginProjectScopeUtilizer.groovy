@@ -26,7 +26,7 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler
  */
 class GradlePluginProjectScopeUtilizer extends ABaseGradlePluginScopeUtilizer<Project> {
 
-    GradlePluginProjectScopeUtilizer(Project scope, Closure<Void>... eventClosures) {
+    GradlePluginProjectScopeUtilizer(Project scope) {
         super(scope)
     }
 
