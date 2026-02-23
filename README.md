@@ -28,7 +28,7 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 - Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `8.14.4`.
 - Java: The plugin is compatible with `Java 8` and later.
-- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies to Maven `3.9.6`
+- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies to Maven `3.9.6`.
 
 ## Usage
 
@@ -38,7 +38,7 @@ on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/maven-s
 To use the plugin, add the following to your `build.gradle` file.
 
     plugins {
-      id 'io.github.mavenplugins.maven-settings' version '1.0.0
+      id 'io.github.mavenplugins.maven-settings' version '1.0.0'
     }
 
 For Gradle 2.0 or earlier you must add the following:

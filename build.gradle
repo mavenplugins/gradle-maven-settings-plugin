@@ -62,7 +62,7 @@ String pluginDescription = "Gradle plugin for exposing Maven settings file confi
         "The plugin supports both global and user-specific Maven settings.xml files and respects Maven's rules for merging them together.\n" +
         "The plugin also supports decryption of encrypted passwords in the Maven settings.xml file using the master password defined in the Maven settings-security.xml file.\n" +
         "The plugin has been originally forked from https://github.com/rmanibus/gradle-maven-settings-plugin.\n" +
-        "A couple of enhacements and adequate usage in Project and Settings scope have been implemented since then.\n" +
+        "A couple of enhancements and adequate usage in Project and Settings scope have been implemented since then.\n" +
         "Look at the plugin's GitHub repository for more details and usage instructions."
 String pluginWebSiteUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
 String pluginOrganization = 'mavenplugins'
