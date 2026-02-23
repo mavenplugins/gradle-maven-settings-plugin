@@ -3,7 +3,15 @@ name: Deploy to MavenCentral
 
 on:
   workflow_dispatch:
-#    inputs:
+    inputs:
+      jreleaserDryRun:
+        required: false
+        type: boolean
+        description: "Run jreleaserDeploy with --dryrun."
+      gradleWarnAll:
+        required: false
+        type: boolean
+        description: "Run gradle commands with --warning-mode all."
 #      version:
 #        description: 'Release version'
 #        required: true
@@ -23,6 +31,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Propagate env from inputs
+        run: |
+          if [[ "${{ inputs.jreleaserDryRun }}" == "true" ]]; then
+            OPT_JRELEASER_DRY_RUN="--dryrun"
+          else
+            OPT_JRELEASER_DRY_RUN=""
+          fi
+          echo "OPT_JRELEASER_DRY_RUN=${OPT_JRELEASER_DRY_RUN}" >> $GITHUB_ENV
+          if [[ "${{ inputs.gradleWarnAll }}" == "true" ]]; then
+            OPT_GRADLE_CLI_WARN_ALL="--warning-mode all"
+          else
+            OPT_GRADLE_CLI_WARN_ALL=""
+          fi
+          echo "OPT_GRADLE_CLI_WARN_ALL=${OPT_GRADLE_CLI_WARN_ALL}" >> $GITHUB_ENV
+
+      - name: Log Environment
+        run: |
+          echo "  github.event_name:      ${{ github.event_name }}"
+          echo "  github.ref:             ${{ github.ref }}"
+          echo "  workdir:                $(pwd)"
+          echo "  homedir:                ${HOME}"
+          echo "  inputs.runner:          ${{ inputs.runner }}"
+          echo "  env.OPT_JRELEASER_DRY_RUN:   ${{ env.OPT_JRELEASER_DRY_RUN }}"
+          echo "  env.OPT_GRADLE_CLI_WARN_ALL: ${{ env.OPT_GRADLE_CLI_WARN_ALL }}"
+
       - name: Checkout code
         uses: actions/checkout@v6
         #  with:
@@ -53,10 +86,12 @@ jobs:
       #      fi
 
       - name: Build and test
-        run: ./gradlew build -S
+        run: |
+          ./gradlew build -S ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       - name: Publish to Local Maven Staging
-        run: ./gradlew publish -S --info
+        run: |
+          ./gradlew publish -S --info ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       - name: Deploy
         env:
@@ -68,7 +103,8 @@ jobs:
           JRELEASER_MAVENCENTRAL_STAGE: 'UPLOAD'
           JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        run: ./gradlew jreleaserDeploy -S --info
+        run: |
+          ./gradlew jreleaserDeploy -S --info ${{ env.OPT_JRELEASER_DRY_RUN }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       # - name: Update to next development version
       #   run: |
