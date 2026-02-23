@@ -103,7 +103,7 @@ abstract class AbstractMavenSettingsPlugin {
         activationContext.setSystemProperties(System.getProperties())
         if (extension.exportGradleProps) {
             Map properties = scopeUtilizer.properties
-            activationContext.setUserProperties(properties.collectEntries { key, value -> [key, value.toString()] } as Map<String, String>)
+            activationContext.setUserProperties(properties.findAll { key, value -> value != null }.collectEntries { key, value -> [key, value.toString()] } as Map<String, String>)
         }
 
         List<Profile> profiles = profileSelector.getActiveProfiles(mavenSettings.profiles.collect { return SettingsUtils.convertFromSettingsProfile(it) },
@@ -136,9 +136,17 @@ abstract class AbstractMavenSettingsPlugin {
             logger.info("${LOG_PREFIX} Found external mirror in settings.xml. Replacing non-local Maven repositories " +
                     "with mirror located at ${externalMirror.url}.")
             createMirrorRepository(repositories, externalMirror) { MavenArtifactRepository repo ->
-                InetAddress host = InetAddress.getByName(repo.url.host)
                 // only match repositories not on localhost and not file based
-                repo.url.scheme != 'file' && !(host.anyLocalAddress || host.isLoopbackAddress() || NetworkInterface.getByInetAddress(host) != null)
+                if (repo.url.scheme == 'file') {
+                    return false
+                }
+                try {
+                    InetAddress host = InetAddress.getByName(repo.url.host)
+                    return !(host.anyLocalAddress || host.isLoopbackAddress() || NetworkInterface.getByInetAddress(host) != null)
+                } catch (UnknownHostException ignored) {
+                    // Cannot resolve hostname - treat as external
+                    return true
+                }
             }
             return
         }
@@ -171,17 +179,17 @@ abstract class AbstractMavenSettingsPlugin {
     }
 
     private void createMirrorRepository(RepositoryHandler repositories, Mirror mirror, Closure<Boolean> predicate) {
-        boolean mirrorFound = false
         List<String> excludedRepositoryNames = mirror.mirrorOf.split(',').findAll { it.startsWith("!") }.collect { it.substring(1) }
-        repositories?.all { repo ->
+        List toRemove = []
+        repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository && repo.name != ArtifactRepositoryContainer.DEFAULT_MAVEN_LOCAL_REPO_NAME
                     && repo.url != URI.create(mirror.url) && predicate(repo) && !excludedRepositoryNames.contains(repo.getName())) {
-                repositories.remove(repo)
-                mirrorFound = true
+                toRemove.add(repo)
             }
         }
 
-        if (mirrorFound) {
+        if (!toRemove.empty) {
+            toRemove.each { repositories.remove(it) }
             Server server = mavenSettings.getServer(mirror.id)
             repositories.maven { MavenArtifactRepository repo ->
                 repo.name = mirror.name ?: mirror.id
