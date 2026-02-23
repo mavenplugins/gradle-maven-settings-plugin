@@ -55,7 +55,12 @@ abstract class AbstractMavenSettingsPlugin {
 
     static {
         final Properties properties = new Properties()
-        AbstractMavenSettingsPlugin.class.getResource('/maven-settings-plugin-expanded.properties').withInputStream {
+        final String propertiesResourcePath = '/maven-settings-plugin-expanded.properties'
+        final URL propsUrl = AbstractMavenSettingsPlugin.class.getResource(propertiesResourcePath)
+        if (propsUrl == null) {
+            throw new IllegalStateException("Resource '${propertiesResourcePath}' not found on classpath.")
+        }
+        propsUrl.withInputStream {
             properties.load(it)
         }
         LOG_PREFIX = "MavenSettingsPlugin v${properties['plugin.version']}:"
@@ -190,8 +195,7 @@ abstract class AbstractMavenSettingsPlugin {
         List<String> excludedRepositoryNames = mirror.mirrorOf.split(',').collect { it.trim() }.findAll { it.startsWith("!") }.collect { it.substring(1) }
         List toRemove = []
         repositories?.each { repo ->
-            if (repo instanceof MavenArtifactRepository && repo.name != ArtifactRepositoryContainer.DEFAULT_MAVEN_LOCAL_REPO_NAME
-                    && repo.url != URI.create(mirror.url) && predicate(repo)) {
+            if (repo instanceof MavenArtifactRepository && repo.url != URI.create(mirror.url) && predicate(repo)) {
                 if (excludedRepositoryNames.contains(repo.name)) {
                     logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by mirrorOf '${mirror.mirrorOf}'. Skipping.")
                 } else if (extension.mirrorExclusions.contains(repo.name)) {

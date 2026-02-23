@@ -18,7 +18,6 @@ package net.linguica.gradle.maven.settings
 
 import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
 import org.gradle.api.Project
-import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler
 
 class MavenSettingsPluginExtension {
 
@@ -28,9 +27,9 @@ class MavenSettingsPluginExtension {
      * List repo names to exclude from mirror application by default.
      */
     private static final List<String> DEFAULT_MIRROR_EXCLUSIONS = [
-            DefaultRepositoryHandler.GRADLE_PLUGIN_PORTAL_REPO_NAME,
-            DefaultRepositoryHandler.GOOGLE_REPO_NAME,
-            DefaultRepositoryHandler.DEFAULT_MAVEN_LOCAL_REPO_NAME
+            'Gradle Central Plugin Repository', // DefaultRepositoryHandler.GRADLE_PLUGIN_PORTAL_REPO_NAME
+            'Google', // DefaultRepositoryHandler.GOOGLE_REPO_NAME
+            'MavenLocal' // DefaultRepositoryHandler.DEFAULT_MAVEN_LOCAL_REPO_NAME
     ]
 
     /**
