@@ -19,7 +19,7 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
     - DependencyResolution repositories - Settings and Project scope.
     - PluginManagement repositories - Settings scope only.
     - Publishing repositories - Settings and Project scope.
-- Exclude Gradle builtin repository names `Gradle Central Plugin Repository`, `Google` and `MavenLocal` from mirror
+- Exclude Gradle built-in repository names `Gradle Central Plugin Repository`, `Google` and `MavenLocal` from mirror
   application by default to prevent accidental overriding of important repositories. This list is configurable via the
   `mirrorExclusions` property.
 - Each plugin action is logged on info level for better visibility into the plugin's configuration modifications.
@@ -28,7 +28,7 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 - Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `8.14.4`.
 - Java: The plugin is compatible with `Java 8` and later.
-- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies to Maven `3.9.6`.
+- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies on Maven `3.9.6`.
 
 ## Usage
 
@@ -45,13 +45,11 @@ For Gradle 2.0 or earlier you must add the following:
 
     buildscript {
         repositories {
-            maven {
-                url 'https://plugins.gradle.org/m2/'
-            }
+            mavenCentral()
         }
         
         dependencies {
-            classpath 'io.github.mavenplugins.gradle:gradle-maven-settings-plugin:1.0.0'
+            classpath 'io.github.mavenplugins.gradle:maven-settings-plugin:1.0.0'
         }
     }
 
@@ -133,8 +131,8 @@ properties are available.
 * `exportGradleProps` - Flag indicating whether or not Gradle project properties should be exported for the purposes of
   settings file property interpolation and profile activation. This defaults to `true`.
 * `mirrorExclusions` - List of repository names to be excluded from applying a mirror definition from settings.xml.
-  This defaults to `['Gradle Central Plugin Repository','Google','MavenLocal']`.
-* `defaultMirrorExclusions` - Read only property representing the default list of repository names to be excluded from
+  This defaults to `['Gradle Central Plugin Repository', 'Google', 'MavenLocal']`.
+* `defaultMirrorExclusions` - Read-only property representing the default list of repository names to be excluded from
   applying a mirror definition from settings.xml.
-  This is `['Gradle Central Plugin Repository','Google','MavenLocal']` and is supposed to be used to
-  extend the `mirrorExclusions` property including its default values if necessary.
+  This is `['Gradle Central Plugin Repository', 'Google', 'MavenLocal']` and is intended to be used as a base when
+  extending `mirrorExclusions` to preserve default exclusions.
