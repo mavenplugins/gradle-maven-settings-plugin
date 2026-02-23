@@ -2,6 +2,7 @@
 
 [![Apache License](https://img.shields.io/github/license/mavenplugins/gradle-maven-settings-plugin?label=License)](./LICENSE.txt)
 [![CI](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mavenplugins.maven-settings/io.github.mavenplugins.maven-settings.gradle.plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.mavenplugins.maven-settings/io.github.mavenplugins.maven-settings.gradle.plugin)
 
 This Gradle plugin provides a migration path for projects coming from a Maven ecosystem.
 It exposes standard Maven configurations located in [settings files](http://maven.apache.org/settings.html) to your
@@ -11,14 +12,17 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 ## Enhanced Features
 
-- Can be applied to Gradle Settings and Project scopes.
+- Plugin can be applied to Settings and Project scope. This includes support for mirror exclusions and profile
+  activation.
 - Expose properties defined in Maven settings files to the Gradle scope.
 - Apply repository credentials defined in Maven settings files to Gradle:
-    - DependencyResolution repositories - Settings and Project scopes.
+    - DependencyResolution repositories - Settings and Project scope.
     - PluginManagement repositories - Settings scope only.
-    - Publishing repositories - Settings and Project scopes.
-- Apply mirror definitions defined in Maven settings files to the Gradle scope.
-- Log output enhanced to provide better visibility into the plugin's actions.
+    - Publishing repositories - Settings and Project scope.
+- Exclude Gradle builtin repository names `Gradle Central Plugin Repository`, `Google` and `MavenLocal` from mirror
+  application by default to prevent accidental overriding of important repositories. This list is configurable via the
+  `mirrorExclusions` property.
+- Each plugin action is logged on info level for better visibility into the plugin's configuration modifications.
 
 ### Compatibility
 
@@ -34,7 +38,7 @@ on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/maven-s
 To use the plugin, add the following to your `build.gradle` file.
 
     plugins {
-      id 'io.github.mavenplugins.maven-settings' version '0.9.0'
+      id 'io.github.mavenplugins.maven-settings' version '1.0.0
     }
 
 For Gradle 2.0 or earlier you must add the following:
@@ -47,7 +51,7 @@ For Gradle 2.0 or earlier you must add the following:
         }
         
         dependencies {
-            classpath 'io.github.mavenplugins.gradle:gradle-maven-settings-plugin:0.9.0'
+            classpath 'io.github.mavenplugins.gradle:gradle-maven-settings-plugin:1.0.0'
         }
     }
 
