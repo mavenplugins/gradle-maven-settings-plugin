@@ -33,9 +33,12 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+// Get project properties as a Map for usage in processResources task to expand properties in **/*-expanded.properties files
+// to fix Gradle 9 deprecation warning about calling project in processResources during runtime
+Map projectProperties = project.properties
 processResources {
     filesMatching("**/*-expanded.properties") {
-        expand project.properties
+        expand projectProperties
     }
 }
 
@@ -52,7 +55,15 @@ String stagingDeploySubDir = 'staging-deploy'
 // Common Gradle Plugin properties for consistent usage
 // within gradlePlugin and publishing configuration
 String pluginDisplayName = 'Maven Settings Plugin'
-String pluginDescription = 'Gradle plugin for exposing Maven settings file configuration to Gradle project.'
+String pluginDescription = "Gradle plugin for exposing Maven settings file configuration to Gradle projects.\n" +
+        "This plugin allows Gradle build scripts to access and use the configuration defined in the user's Maven settings.xml file (e.g. repositories, credentials, mirrors, etc.)\n" +
+        "to be used in Gradle repositories configuration and other relevant places.\n" +
+        "It is especially useful for sharing repository configuration and credentials across multiple Gradle projects without hardcoding them in each project.\n" +
+        "The plugin supports both global and user-specific Maven settings.xml files and respects Maven's rules for merging them together.\n" +
+        "The plugin also supports decryption of encrypted passwords in the Maven settings.xml file using the master password defined in the Maven settings-security.xml file.\n" +
+        "The plugin has been originally forked from https://github.com/rmanibus/gradle-maven-settings-plugin.\n" +
+        "A couple of enhacements and adequate usage in Project and Settings scope have been implemented since then.\n" +
+        "Look at the plugin's GitHub repository for more details and usage instructions."
 String pluginWebSiteUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
 String pluginOrganization = 'mavenplugins'
 String pluginOrganizationUrlAsString = 'https://github.com/mavenplugins'
@@ -132,7 +143,8 @@ publishing {
                 // Customize marker publication of mavenSettings here
                 projectLogger.info("###### Specific customization of publication ${name} ...")
                 pom {
-                    name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
+                    //name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
+                    name = "${pluginDisplayName}"
                 }
             }
         }
@@ -170,6 +182,12 @@ jreleaser {
     // Env variables to be provided for Maven Central deployment:
     //   JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.<secret_name> }}
     //   JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.<secret_name> }}
+    //   or JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.<secret_name> }}
+    //   JRELEASER_MAVEN_CENTRAL_STAGE: 'UPLOAD', 'PUBLISH' or 'FULL'
+    //     'UPLOAD' (default) - upload artifacts to staging repository but do not publish it (i.e. do not release it from staging to public)
+    //     'PUBLISH' - publish staged repository (i.e. release it from staging to public) but do not upload artifacts to staging repository
+    //                 (i.e. expect that artifacts are already uploaded to staging repository)
+    //     'FULL' - upload artifacts to staging repository and publish it (i.e. release it from staging to public)
     //   JRELEASER_NEXUS2_USERNAME: ${{ secrets.<secret_name> }}
     //   JRELEASER_NEXUS2_PASSWORD: ${{ secrets.<secret_name> }}
     //   or JRELEASER_NEXUS2_TOKEN: ${{ secrets.<secret_name> }}
@@ -179,6 +197,11 @@ jreleaser {
                 'release-deploy' {
                     active = 'RELEASE'
                     url = 'https://central.sonatype.com/api/v1/publisher'
+                    applyMavenCentralRules = true
+                    // Time to wait between state transition checks, in seconds. Defaults to `20`.
+                    retryDelay = 23
+                    // Maximum number of attempts to verify state transition. Defaults to `100`.
+                    maxRetries = 123
                     stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
                 }
             }
