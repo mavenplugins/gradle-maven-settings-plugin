@@ -10,7 +10,11 @@ updates:
     directory: /
     schedule:
       interval: daily
-    #ignore:
+    ignore:
+      # org.codehaus.plexus must be managed manually
+      #   to keep it compliant with maven version
+      - dependency-name: org.codehaus.plexus:plexus-cipher
+      - dependency-name: org.codehaus.plexus:plexus-sec-dispatcher
       # jgit 6 requires Java 11+
       #- dependency-name: org.eclipse.jgit:org.eclipse.jgit
       # commons-net has a broken timestamp version -> 20030805.205232
