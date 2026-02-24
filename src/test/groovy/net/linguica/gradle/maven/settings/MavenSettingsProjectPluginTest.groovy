@@ -46,7 +46,6 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.with {
             repositories {
                 mavenLocal()
-                jcenter()
                 mavenCentral()
             }
         }
@@ -71,12 +70,12 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                 mavenLocal()
                 mavenCentral()
                 maven {
-                    name "some-repo"
-                    url "https://example.com"
+                    name = "some-repo"
+                    url = "https://example.com"
                 }
                 maven {
-                    name "some-other-repo"
-                    url "https://example.com"
+                    name = "some-other-repo"
+                    url = "https://example.com"
                 }
             }
         }
@@ -100,11 +99,10 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.with {
             repositories {
                 mavenLocal()
-                jcenter()
                 mavenCentral()
                 maven {
-                    name 'myLocal'
-                    url "file://${project.buildDir}/.m2"
+                    name = 'myLocal'
+                    url = uri(new File(project.layout.buildDirectory.asFile.get(), '.m2'))
                 }
             }
         }
@@ -128,11 +126,10 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.with {
             repositories {
                 mavenLocal()
-                jcenter()
                 mavenCentral()
                 maven {
-                    name 'myLocal'
-                    url "http://localhost/maven"
+                    name = 'myLocal'
+                    url = "http://localhost/maven"
                 }
             }
         }
@@ -158,8 +155,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                 mavenLocal()
                 mavenCentral()
                 maven {
-                    name 'myRemote'
-                    url "https://maven.foobar.org/repo"
+                    name = 'myRemote'
+                    url = "https://maven.foobar.org/repo"
                 }
             }
         }
@@ -184,8 +181,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
             repositories {
                 mavenLocal()
                 maven {
-                    name 'myRemote'
-                    url "https://maven.foobar.org/repo"
+                    name = 'myRemote'
+                    url = "https://maven.foobar.org/repo"
                 }
             }
         }
@@ -247,8 +244,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.with {
             repositories {
                 maven {
-                    name 'central'
-                    url 'https://repo1.maven.org/maven2/'
+                    name = 'central'
+                    url = 'https://repo1.maven.org/maven2/'
                 }
             }
         }
@@ -293,8 +290,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
             publishing {
                 repositories {
                     maven {
-                        name 'central'
-                        url 'https://repo1.maven.org/maven2/'
+                        name = 'central'
+                        url = 'https://repo1.maven.org/maven2/'
                     }
                 }
             }

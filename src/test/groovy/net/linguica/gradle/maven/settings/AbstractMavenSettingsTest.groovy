@@ -16,12 +16,10 @@
 
 package net.linguica.gradle.maven.settings
 
-import org.apache.maven.settings.Settings
 import org.apache.maven.settings.io.DefaultSettingsWriter
 import org.apache.maven.settings.io.SettingsWriter
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
-import org.gradle.util.ConfigureUtil
 import org.junit.After
 import org.junit.Before
 
@@ -42,11 +40,11 @@ abstract class AbstractMavenSettingsTest {
         project = null
     }
 
-    void withSettings(@DelegatesTo(Settings) Closure configureClosure) {
-        Settings settings = new Settings()
-        ConfigureUtil.configure(configureClosure, settings)
+    void withSettings(@DelegatesTo(org.apache.maven.settings.Settings) Closure configureClosure) {
+        org.apache.maven.settings.Settings mavenSettings = new org.apache.maven.settings.Settings()
+        project.configure(mavenSettings, configureClosure)
         SettingsWriter writer = new DefaultSettingsWriter()
-        writer.write(settingsFile, null, settings)
+        writer.write(settingsFile, null, mavenSettings)
     }
 
     void addPluginWithSettings() {
