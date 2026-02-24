@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: gradle
+    commit-message:
+      prefix: deps
+    directory: /
+    schedule:
+      interval: daily
+    #ignore:
+      # jgit 6 requires Java 11+
+      #- dependency-name: org.eclipse.jgit:org.eclipse.jgit
+      # commons-net has a broken timestamp version -> 20030805.205232
+      #- dependency-name: commons-net:commons-net
+      # aws-java-sdk updates several times per week
+      #- dependency-name: com.amazonaws:aws-java-sdk-s3
+      # download-task 5.1.x fails due to gradle module metadata
+      #- dependency-name: de.undercouch:gradle-download-task
