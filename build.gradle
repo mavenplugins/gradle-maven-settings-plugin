@@ -26,9 +26,13 @@ dependencies {
     implementation 'org.codehaus.plexus:plexus-sec-dispatcher:2.0'
 
     testImplementation 'org.hamcrest:hamcrest-library:3.0'
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.3'
-    testImplementation gradleTestKit() // required for functional tests with GradleRunner
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // required for JUnit5, do not specify a version here!
+    // JUnit 5 BOM pom to manage JUnit 5 dependencies versions in one place
+    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    // required for functional tests with GradleRunner:
+    testImplementation gradleTestKit()
+    // required for JUnit5, do not specify a version here:
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
