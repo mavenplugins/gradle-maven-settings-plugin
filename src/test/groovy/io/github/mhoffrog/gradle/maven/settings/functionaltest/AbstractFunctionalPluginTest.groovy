@@ -16,7 +16,6 @@
 
 package io.github.mhoffrog.gradle.maven.settings.functionaltest
 
-import io.github.mhoffrog.gradle.maven.settings.MavenConstants
 import net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest
 import net.linguica.gradle.maven.settings.test.common.beans.RepoCredentials
 import net.linguica.gradle.maven.settings.test.common.beans.RepositoryBean
@@ -148,6 +147,10 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
 
         // Assert: verify console output and successful task outcome
         println("====== Result: ======\n${result.output}\n====== EndOfResult ======")
+        // Gradle is coming up with UP-TO-DATE for the task result,
+        // as the task does not have any inputs or outputs and is executed successfully,
+        // so we can rely on that to verify that the build logic was executed at all and the plugin was applied successfully.
+        // Note that we are performing a Settings scope only test here - without any project content.
         assertTrue(result.task(":nop")?.outcome == TaskOutcome.UP_TO_DATE)
         "TESTRESULT: Effective pluginManagement repositories: [${this.effectivePluginManagementRepositories.size()}]".with { expected ->
             assertTrue(result.output.contains(expected), "Expected output to contain: ${expected}")
