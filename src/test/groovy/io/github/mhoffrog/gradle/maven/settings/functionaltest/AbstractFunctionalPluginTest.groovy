@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.maven.settings.funtionaltest
+package io.github.mhoffrog.gradle.maven.settings.functionaltest
 
-import io.github.mhoffrog.gradle.maven.settings.MavenConstants
-import io.github.mhoffrog.maven.settings.funtionaltest.beans.RepoCredentials
-import io.github.mhoffrog.maven.settings.funtionaltest.beans.RepositoryBean
+
 import net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest
+import net.linguica.gradle.maven.settings.test.common.beans.RepoCredentials
+import net.linguica.gradle.maven.settings.test.common.beans.RepositoryBean
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.io.TempDir
@@ -28,13 +28,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue
 
 abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsTest {
 
-    private URI mavenLocalURI = MavenConstants.DEFAULT_MAVEN_LOCAL_REPO_URI
-
     private String pluginManagementRepositoriesBlock = ""
 
     private String dependencyRepositoriesBlock = ""
-
-    private String publishingRepositoriesBlock = ""
 
     private List<String> mirrorExclusions = []
 
@@ -43,7 +39,7 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
     private List<String> activeProfiles = []
 
     // ====== Expected results for assertions ======
-    private List<RepositoryBean> effectivePluginManagamentRepositories = []
+    private List<RepositoryBean> effectivePluginManagementRepositories = []
 
     private List<RepositoryBean> effectiveDependencyRepositories = []
 
@@ -74,11 +70,6 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
         return this
     }
 
-    AbstractFunctionalPluginTest withPublishingRepositoriesBlock(String publishingRepositoriesBlock) {
-        this.publishingRepositoriesBlock = publishingRepositoriesBlock
-        return this
-    }
-
     AbstractFunctionalPluginTest withMirrorExclusions(List<String> mirrorExclusions) {
         this.mirrorExclusions = mirrorExclusions
         return this
@@ -95,7 +86,7 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
     }
 
     AbstractFunctionalPluginTest expectEffectivePluginManagementRepositories(List<RepositoryBean> effectivePluginManagementRepositories) {
-        this.effectivePluginManagamentRepositories = effectivePluginManagementRepositories
+        this.effectivePluginManagementRepositories = effectivePluginManagementRepositories
         return this
     }
 
@@ -113,23 +104,6 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
     AbstractFunctionalPluginTest expectCredentials(List<RepoCredentials> expectedCredentials) {
         this.expectedCredentials = expectedCredentials
         return this
-    }
-
-    AbstractFunctionalPluginTest expectedMavenLocalURI(URI mavenLocalURI) {
-        this.mavenLocalURI = mavenLocalURI
-        return this
-    }
-
-    String getRepositoriesBlock() {
-        return dependencyRepositoriesBlock
-    }
-
-    List<String> getEffectiveRepositoryNames() {
-        return effectiveRepositoryNames
-    }
-
-    List<String> getEffectiveRepositoryUrls() {
-        return effectiveRepositoryUrls
     }
 
     List<String> getMirrorExclusions() {
@@ -175,13 +149,13 @@ abstract class AbstractFunctionalPluginTest extends AbstractCommonMavenSettingsT
         // Assert: verify console output and successful task outcome
         println("====== Result: ======\n${result.output}\n====== EndOfResult ======")
         assertTrue(result.task(":nop")?.outcome == TaskOutcome.UP_TO_DATE)
-        "TESTRESULT: Effective pluginManagement repositories: [${this.effectivePluginManagamentRepositories.size()}]".with { expected ->
+        "TESTRESULT: Effective pluginManagement repositories: [${this.effectivePluginManagementRepositories.size()}]".with { expected ->
             assertTrue(result.output.contains(expected), "Expected output to contain: ${expected}")
         }
         "TESTRESULT: Effective dependency repositories: [${this.effectiveDependencyRepositories.size()}]".with { expected ->
             assertTrue(result.output.contains(expected), "Expected output to contain: ${expected}")
         }
-        this.effectivePluginManagamentRepositories.each { repo ->
+        this.effectivePluginManagementRepositories.each { repo ->
             "TESTRESULT: Effective pluginManagement repository: ${repo.name} (${repo.url})".with { expected ->
                 assertTrue(result.output.contains(expected), "Expected output to contain: ${expected}")
             }

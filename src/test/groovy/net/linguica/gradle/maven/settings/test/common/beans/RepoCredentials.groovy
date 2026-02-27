@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.maven.settings.funtionaltest.beans
+package net.linguica.gradle.maven.settings.test.common.beans
 
 class RepoCredentials {
 

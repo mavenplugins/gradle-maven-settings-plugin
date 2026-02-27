@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package net.linguica.gradle.maven.settings
+package net.linguica.gradle.maven.settings.test
 
+import net.linguica.gradle.maven.settings.MavenSettingsPlugin
 import net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest
 
 abstract class AbstractMavenSettingsTest extends AbstractCommonMavenSettingsTest {
