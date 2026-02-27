@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.gradle.scope.impl
+package io.github.mhoffrog.gradle.maven.settings.scope.impl
 
-import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
+
+import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.initialization.Settings
@@ -51,6 +52,10 @@ abstract class ABaseGradlePluginScopeUtilizer<T extends ExtensionAware> implemen
 
     boolean isSettingsScope() {
         return getScope() instanceof Settings
+    }
+
+    String getScopeName() {
+        return isProjectScope() ? "Project" : (isSettingsScope() ? "Settings" : "Unknown")
     }
 
     /**
