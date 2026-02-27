@@ -16,20 +16,23 @@
 
 package net.linguica.gradle.maven.settings
 
+import io.github.mhoffrog.gradle.maven.settings.GradleConstants
 import org.apache.maven.settings.Mirror
 import org.apache.maven.settings.Profile
 import org.apache.maven.settings.Server
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
+import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
-import static org.junit.Assert.*
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
     @Test
     void applyMavenSettingsProjectPlugin() {
         project.with {
-            apply plugin: 'io.github.mavenplugins.maven-settings'
+            apply plugin: "${PLUGIN_ID}"
         }
 
         assertTrue(project.plugins.hasPlugin(MavenSettingsPlugin.class))
@@ -37,8 +40,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
     @Test
     void declareGlobalMirror() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: '*', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: '*', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -53,14 +56,14 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(2))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myrepo'))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
     }
 
     @Test
     void respectsMirrorExcludes() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: '*,!some-repo', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: '*,!some-repo', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -83,15 +86,15 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myrepo'))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
         assertThat(project.repositories, hasItem(hasProperty('name', equalTo('some-repo'))))
     }
 
     @Test
     void declareExternalMirrorWithFileRepo() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: 'external:*', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: 'external:*', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -110,15 +113,15 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myrepo'))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
         assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myLocal'))))
     }
 
     @Test
     void declareExternalMirrorWithLocalhostRepo() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: 'external:*', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: 'external:*', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -137,15 +140,15 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myrepo'))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
         assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myLocal'))))
     }
 
     @Test
     void declareMavenCentralMirror() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: 'central', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: 'central', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -164,15 +167,15 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myrepo'))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
         assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myRemote'))))
     }
 
     @Test
     void declareMavenCentralMirrorWithoutCentralRepo() {
-        withSettings {
-            mirrors.add new Mirror(id: 'myrepo', mirrorOf: 'central', url: 'http://maven.foo.bar')
+        withMavenSettings {
+            mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: 'central', url: TEST_MIRROR_URL)
         }
 
         addPluginWithSettings()
@@ -190,53 +193,53 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.repositories, hasSize(2))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('MavenLocal'))))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
         assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myRemote'))))
     }
 
     @Test
     void profileActiveWithSettingsActiveProfile() {
         def props = new Properties()
-        props.setProperty('myprop', 'true')
+        props.setProperty(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
 
-        withSettings {
-            profiles.add new Profile(id: 'myprofile', properties: props)
-            activeProfiles = ['myprofile']
+        withMavenSettings {
+            profiles.add new Profile(id: TEST_PROFILE_ID, properties: props)
+            activeProfiles = [TEST_PROFILE_ID]
         }
 
         addPluginWithSettings()
 
         project.evaluate()
 
-        assertThat(project.properties, hasEntry('myprop', 'true'))
+        assertThat(project.properties, hasEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE))
     }
 
     @Test
     void profileActiveWithExtensionActiveProfile() {
         def props = new Properties()
-        props.setProperty('myprop', 'true')
+        props.setProperty(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
 
-        withSettings {
-            profiles.add new Profile(id: 'myprofile', properties: props)
+        withMavenSettings {
+            profiles.add new Profile(id: TEST_PROFILE_ID, properties: props)
         }
 
         addPluginWithSettings()
 
         project.with {
             mavenSettings {
-                activeProfiles = ['myprofile']
+                activeProfiles = [TEST_PROFILE_ID]
             }
         }
 
         project.evaluate()
 
-        assertThat(project.properties, hasEntry('myprop', 'true'))
+        assertThat(project.properties, hasEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE))
     }
 
     @Test
     void credentialsAddedToNamedRepository() {
-        withSettings {
-            servers.add new Server(id: 'central', username: 'first.last', password: 'secret')
+        withMavenSettings {
+            servers.add new Server(id: 'central', username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
         }
 
         addPluginWithSettings()
@@ -252,14 +255,14 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertEquals('first.last', project.repositories.central.credentials.username)
-        assertEquals('secret', project.repositories.central.credentials.password)
+        assertEquals(TEST_USER_NAME, project.repositories.central.credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.repositories.central.credentials.password)
     }
 
     @Test
     void credentialsOnlyAddedToMavenRepositories() {
-        withSettings {
-            servers.add new Server(id: 'flat', username: 'first.last', password: 'secret')
+        withMavenSettings {
+            servers.add new Server(id: 'flat', username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
         }
 
         addPluginWithSettings()
@@ -278,8 +281,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
     @Test
     void credentialsAddedToPublishingRepository() {
-        withSettings {
-            servers.add new Server(id: 'central', username: 'first.last', password: 'secret')
+        withMavenSettings {
+            servers.add new Server(id: 'central', username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
         }
 
         addPluginWithSettings()
@@ -299,7 +302,29 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertEquals('first.last', project.publishing.repositories.central.credentials.username)
-        assertEquals('secret', project.publishing.repositories.central.credentials.password)
+        assertEquals(TEST_USER_NAME, project.publishing.repositories.central.credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.publishing.repositories.central.credentials.password)
     }
+
+    @Test
+    void replaceMavenLocalURLWithConfigFromSettingsFile() {
+        withMavenSettings {
+            localRepository = getMavenLocalTestDirName()
+        }
+
+        addPluginWithSettings()
+
+        project.with {
+            repositories {
+                mavenLocal()
+            }
+        }
+
+        project.evaluate()
+
+        assertThat(project.repositories, hasSize(1))
+        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
+        assertThat(project.repositories, hasItem(hasProperty('url', equalTo(getMavenLocalTestDir().toURI()))))
+    }
+
 }
