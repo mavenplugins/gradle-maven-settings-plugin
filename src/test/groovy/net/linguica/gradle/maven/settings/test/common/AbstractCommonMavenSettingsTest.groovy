@@ -16,11 +16,9 @@
 
 package net.linguica.gradle.maven.settings.test.common
 
-
 import org.apache.maven.settings.io.DefaultSettingsWriter
 import org.apache.maven.settings.io.SettingsWriter
 import org.gradle.api.Project
-import org.gradle.api.internal.artifacts.dsl.DefaultRepositoryHandler
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -56,8 +54,10 @@ abstract class AbstractCommonMavenSettingsTest {
         mavenSettingsDir.mkdirs()
         mavenSettingsFile = new File(mavenSettingsDir, 'settings.xml')
         project = new ProjectBuilder().build()
-        ((DefaultRepositoryHandler) new ProjectBuilder().build().repositories).mavenLocal {
-            mavenLocalRepo -> this.gradleRuntimeDefaultMavenLocalURI = mavenLocalRepo.url
+        // Use another project to get the default maven local repo URI,
+        // so that the test project configuration is not affected.
+        new ProjectBuilder().build().repositories.mavenLocal { mavenLocalRepo ->
+            this.gradleRuntimeDefaultMavenLocalURI = mavenLocalRepo.url
         }
     }
 

@@ -169,7 +169,7 @@ class FunctionalPluginSettingsScopeTest extends AbstractFunctionalPluginTest {
     }
 
     @Test
-    void credentialsAddedToMavenDependencyAndPluginManagamentRepository() {
+    void credentialsAddedToMavenDependencyAndPluginManagementRepository() {
         withMavenSettings {
             servers.add new Server(id: 'central', username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
         }
