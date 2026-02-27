@@ -22,11 +22,22 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 - Exclude Gradle built-in repository names `Gradle Central Plugin Repository`, `Google` and `MavenLocal` from mirror
   application by default to prevent accidental overriding of important repositories. This list is configurable via the
   `mirrorExclusions` property.
-- Each plugin action is logged on info level for better visibility into the plugin's configuration modifications.
+- Apply `localRepository` from a `userSettingsFileName` configured settings file to the Gradle `MavenLocal` repo if
+  `localRepository` is set in there. (Since plugin version `1.0.1`).
+
+### Log Output
+
+- Each plugin action is logged with the effective scope reference on info level for better visibility into the plugin's
+  configuration modifications.
+
+### Unit Tests
+
+- Tests migrated to JUnit 5
+- Functional tests added for the Gradle Settings scope.
 
 ### Compatibility
 
-- Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `8.14.4`.
+- Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `9.3.1`.
 - Java: The plugin is compatible with `Java 8` and later.
 - Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies on Maven `3.9.6`.
 
@@ -38,7 +49,7 @@ on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/maven-s
 To use the plugin, add the following to your `build.gradle` file.
 
     plugins {
-      id 'io.github.mavenplugins.maven-settings' version '1.0.0'
+      id 'io.github.mavenplugins.maven-settings' version '1.0.1'
     }
 
 For Gradle 2.0 or earlier you must add the following:
@@ -49,7 +60,7 @@ For Gradle 2.0 or earlier you must add the following:
         }
         
         dependencies {
-            classpath 'io.github.mavenplugins.gradle:maven-settings-plugin:1.0.0'
+            classpath 'io.github.mavenplugins.gradle:maven-settings-plugin:1.0.1'
         }
     }
 
