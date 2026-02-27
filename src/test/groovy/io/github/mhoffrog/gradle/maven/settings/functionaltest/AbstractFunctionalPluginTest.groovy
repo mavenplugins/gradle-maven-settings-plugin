@@ -16,7 +16,7 @@
 
 package io.github.mhoffrog.gradle.maven.settings.functionaltest
 
-
+import io.github.mhoffrog.gradle.maven.settings.MavenConstants
 import net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest
 import net.linguica.gradle.maven.settings.test.common.beans.RepoCredentials
 import net.linguica.gradle.maven.settings.test.common.beans.RepositoryBean
