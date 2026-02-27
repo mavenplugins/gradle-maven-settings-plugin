@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.gradle.scope
+package io.github.mhoffrog.gradle.maven.settings.scope
 
 
 import org.gradle.api.artifacts.dsl.RepositoryHandler
@@ -37,6 +37,13 @@ interface IGradlePluginScopeUtilizer<T> {
     boolean isProjectScope()
 
     boolean isSettingsScope()
+
+    /**
+     * Gets the name of the Gradle plugin scope.
+     *
+     * @return the name of the Gradle plugin scope.
+     */
+    String getScopeName()
 
     /**
      * Gets the logger for the Gradle plugin scope.

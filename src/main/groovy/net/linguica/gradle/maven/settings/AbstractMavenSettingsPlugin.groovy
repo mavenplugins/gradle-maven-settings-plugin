@@ -17,7 +17,7 @@
 package net.linguica.gradle.maven.settings
 
 import groovy.transform.CompileStatic
-import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
 import org.apache.maven.model.Profile
 import org.apache.maven.model.building.ModelProblemCollector
 import org.apache.maven.model.building.ModelProblemCollectorRequest
@@ -45,13 +45,23 @@ import java.util.Map.Entry
 abstract class AbstractMavenSettingsPlugin {
     public static final String MAVEN_SETTINGS_EXTENSION_NAME = "mavenSettings"
 
-    private static final String LOG_PREFIX;
+    private static String LOG_PREFIX_TEMPLATE
+
+    private static final String LOG_PREFIX_SCOPE_TOKEN = '@SCOPE@'
+
+    private String logPrefix
 
     private org.apache.maven.settings.Settings mavenSettings
 
     private IGradlePluginScopeUtilizer scopeUtilizer
 
-    private Logger logger;
+    private Logger logger
+
+    private Mirror globalMirror
+
+    private Mirror externalMirror
+
+    private Mirror centralMirror
 
     static {
         final Properties properties = new Properties()
@@ -63,16 +73,17 @@ abstract class AbstractMavenSettingsPlugin {
         propsUrl.withInputStream {
             properties.load(it)
         }
-        LOG_PREFIX = "MavenSettingsPlugin v${properties['plugin.version']}:"
+        LOG_PREFIX_TEMPLATE = "MavenSettings[${LOG_PREFIX_SCOPE_TOKEN}] v${properties['plugin.version']}:"
     }
 
-    void apply(IGradlePluginScopeUtilizer scopeUtilizer) {
-        this.scopeUtilizer = scopeUtilizer
+    void apply(IGradlePluginScopeUtilizer scopeUtilizerParam) {
+        scopeUtilizer = scopeUtilizerParam
+        logPrefix = LOG_PREFIX_TEMPLATE.replace(LOG_PREFIX_SCOPE_TOKEN, scopeUtilizer.scopeName)
         logger = scopeUtilizer.logger
-        logger.info("${LOG_PREFIX} Applying Maven Settings to Gradle ${scopeUtilizer.settingsScope ? "Settings" : "Project"} scope.")
+        logger.info("${logPrefix} Applying Maven Settings to Gradle ${scopeUtilizer.scopeName} scope.")
 
-        MavenSettingsPluginExtension extension =
-                scopeUtilizer.extensions.create(MAVEN_SETTINGS_EXTENSION_NAME, MavenSettingsPluginExtension.class, scopeUtilizer)
+        final MavenSettingsPluginExtension extension =
+                this.scopeUtilizer.extensions.create(MAVEN_SETTINGS_EXTENSION_NAME, MavenSettingsPluginExtension.class, scopeUtilizer)
 
         scopeUtilizer.setPluginEventClosure {
             loadSettings(extension)
@@ -80,8 +91,18 @@ abstract class AbstractMavenSettingsPlugin {
             if (!scopeUtilizer.repositoriesConfigured
                     && !scopeUtilizer.pluginManagementRepositoriesConfigured
                     && !scopeUtilizer.publishingRepositoriesConfigured) {
-                logger.warn("${LOG_PREFIX} No repositories configured in this scope. No repo credentials to apply.")
+                logger.warn("${logPrefix} No repositories configured in ${scopeUtilizer.scopeName} scope. No repo credentials to apply.")
             } else {
+                if (extension.isNonDefaultUserSettingsFileConfigured()) {
+                    [
+                            scopeUtilizer.pluginManagementRepositories,
+                            scopeUtilizer.repositories,
+                            scopeUtilizer.publishingRepositories
+                    ].each { RepositoryHandler repos ->
+                        applyMavenLocalFromUserSettingsFileConfigured(extension, repos)
+                    }
+                }
+                determineMirrors()
                 registerMirrors(extension, scopeUtilizer.pluginManagementRepositories)
                 registerMirrors(extension, scopeUtilizer.repositories)
                 applyRepoCredentials('PluginManagement', scopeUtilizer.pluginManagementRepositories)
@@ -92,11 +113,12 @@ abstract class AbstractMavenSettingsPlugin {
     }
 
     private void loadSettings(MavenSettingsPluginExtension extension) {
+        logger.info("${logPrefix} Loading Maven user settings from file '${extension.userSettingsFile}'.")
         LocalMavenSettingsLoader settingsLoader = new LocalMavenSettingsLoader(extension)
         try {
             mavenSettings = settingsLoader.loadSettings()
         } catch (SettingsBuildingException e) {
-            throw new GradleScriptException("${LOG_PREFIX} Unable to read local Maven settings.", e)
+            throw new GradleScriptException("${logPrefix} Unable to read local Maven settings.", e)
         }
     }
 
@@ -135,19 +157,57 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void registerMirrors(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
-        Mirror globalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').contains('*') }
+    private void determineMirrors() {
+        globalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('*') }
         if (globalMirror != null) {
-            logger.info("${LOG_PREFIX} Found global mirror in settings.xml. Replacing Maven repositories with mirror " +
-                    "located at ${globalMirror.url}")
+            logger.info("${logPrefix} Found global mirror in settings.xml: '${resolveMirrorName(globalMirror)}' at '${globalMirror.url}'.")
+        }
+        externalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('external:*') }
+        if (externalMirror != null) {
+            logger.info("${logPrefix} Found external mirror in settings.xml: '${resolveMirrorName(externalMirror)}' at '${externalMirror.url}'.")
+        }
+        centralMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('central') }
+        if (centralMirror != null) {
+            logger.info("${logPrefix} Found central mirror in settings.xml:  '${resolveMirrorName(centralMirror)}' at '${centralMirror.url}'.")
+        }
+    }
+
+    private void applyMavenLocalFromUserSettingsFileConfigured(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
+        repositories?.all { repo ->
+            if (repo instanceof MavenArtifactRepository
+                    && repo.name == ArtifactRepositoryContainer.DEFAULT_MAVEN_LOCAL_REPO_NAME) {
+                URI mavenSettingsLocalRepoURI
+                // mavenSettingsLocalRepoURI = mavenSettings.localRepository ?
+                //     new File(mavenSettings.localRepository).toURI()
+                if (mavenSettings.localRepository) {
+                    mavenSettingsLocalRepoURI = new File(mavenSettings.localRepository).toURI()
+                    if (repo.url != mavenSettingsLocalRepoURI) {
+                        logger.info("${logPrefix} Replacing ${repo.name} repository with URL ${mavenSettingsLocalRepoURI}.")
+                    }
+                } else {
+                    // For now we do not enforce Maven default behavior as applied for an original user settings.xml
+                    // without localRepository element, which is to use ${user.home}/.m2/repository as the local repo location.
+                    // This is because it may be unexpected for users of the plugin that do specify a custom settings file
+                    // without a localRepository element that their mavenLocal() repository URL gets changed to a default location
+                    // that may not even exist on their system. Instead, we log a warning and leave the mavenLocal() repository URL unchanged,
+                    // which also allows users to still use mavenLocal() with a custom settings file without a localRepository element if they want to.
+                    //mavenSettingsLocalRepoURI = MavenConstants.DEFAULT_MAVEN_LOCAL_REPO_URI
+                    logger.warn("${logPrefix} No localRepository element found in ${extension.userSettingsFileName}. Leaving ${repo.name} unchanged with URL ${repo.url}.")
+                }
+                if (mavenSettingsLocalRepoURI) {
+                    repo.url = mavenSettingsLocalRepoURI
+                }
+            }
+        }
+    }
+
+    private void registerMirrors(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
+        if (globalMirror != null) {
             createMirrorRepository(extension, repositories, globalMirror)
             return
         }
 
-        Mirror externalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').contains('external:*') }
         if (externalMirror != null) {
-            logger.info("${LOG_PREFIX} Found external mirror in settings.xml. Replacing non-local Maven repositories " +
-                    "with mirror located at ${externalMirror.url}.")
             createMirrorRepository(extension, repositories, externalMirror) { MavenArtifactRepository repo ->
                 // only match repositories not on localhost and not file based
                 if (repo.url.scheme == 'file') {
@@ -164,10 +224,7 @@ abstract class AbstractMavenSettingsPlugin {
             return
         }
 
-        Mirror centralMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').contains('central') }
         if (centralMirror != null) {
-            logger.info("${LOG_PREFIX} Found central mirror in settings.xml. Replacing Maven Central repository with " +
-                    "mirror located at ${centralMirror.url}.")
             createMirrorRepository(extension, repositories, centralMirror) { MavenArtifactRepository repo ->
                 ArtifactRepositoryContainer.MAVEN_CENTRAL_URL.startsWith(repo.url.toString())
             }
@@ -177,7 +234,7 @@ abstract class AbstractMavenSettingsPlugin {
     private void applyRepoCredentials(String repoContext, @Nullable RepositoryHandler repositories) {
         repositories?.all { repo ->
             if (repo instanceof MavenArtifactRepository) {
-                logger.info("${LOG_PREFIX} ${repoContext} repository '${repo.name}' '${repo.url}' found.")
+                logger.info("${logPrefix} ${repoContext} repository '${repo.name}' '${repo.url}' found.")
                 mavenSettings.servers.each { server ->
                     if (repo.name == server.id) {
                         addCredentials(logger, server, repo as MavenArtifactRepository)
@@ -197,11 +254,11 @@ abstract class AbstractMavenSettingsPlugin {
         repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository && repo.url != URI.create(mirror.url) && predicate(repo)) {
                 if (excludedRepositoryNames.contains(repo.name)) {
-                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by mirrorOf '${mirror.mirrorOf}'. Skipping.")
+                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by mirrorOf '${mirror.mirrorOf}'. Skipping.")
                 } else if (extension.mirrorExclusions.contains(repo.name)) {
-                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
+                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
                 } else {
-                    logger.info("${LOG_PREFIX} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
+                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
                     toRemove.add(repo)
                 }
             }
@@ -211,20 +268,25 @@ abstract class AbstractMavenSettingsPlugin {
             toRemove.each { repositories.remove(it) }
             Server server = mavenSettings.getServer(mirror.id)
             repositories.maven { MavenArtifactRepository repo ->
-                repo.name = mirror.name ?: mirror.id
+                repo.name = resolveMirrorName(mirror)
                 repo.url = mirror.url
                 addCredentials(logger, server, repo)
             }
         }
     }
 
-    private static addCredentials(Logger logger, Server server, MavenArtifactRepository repo) {
+    private String resolveMirrorName(Mirror mirror) {
+        return mirror.name ?: mirror.id
+    }
+
+    private addCredentials(Logger logger, Server server, MavenArtifactRepository repo) {
         if (server?.username != null && server?.password != null) {
             repo.credentials {
                 it.username = server.username
                 it.password = server.password
             }
-            logger.info("${LOG_PREFIX} Applying credentials for '${repo.url}' from settings.xml server '${server.id}'.")
+            logger.info("${logPrefix} Applying credentials for '${repo.url}' from settings.xml server '${server.id}'.")
         }
     }
+
 }

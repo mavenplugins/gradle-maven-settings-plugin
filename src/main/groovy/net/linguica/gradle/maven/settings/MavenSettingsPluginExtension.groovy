@@ -16,7 +16,9 @@
 
 package net.linguica.gradle.maven.settings
 
-import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.GradleConstants
+import io.github.mhoffrog.gradle.maven.settings.MavenConstants
+import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
 import org.gradle.api.Project
 
 class MavenSettingsPluginExtension {
@@ -27,16 +29,16 @@ class MavenSettingsPluginExtension {
      * List repo names to exclude from mirror application by default.
      */
     private static final List<String> DEFAULT_MIRROR_EXCLUSIONS = [
-            'Gradle Central Plugin Repository', // DefaultRepositoryHandler.GRADLE_PLUGIN_PORTAL_REPO_NAME
-            'Google', // DefaultRepositoryHandler.GOOGLE_REPO_NAME
-            'MavenLocal' // DefaultRepositoryHandler.DEFAULT_MAVEN_LOCAL_REPO_NAME
+            GradleConstants.GRADLE_PLUGIN_PORTAL_REPO_NAME,
+            GradleConstants.GOOGLE_REPO_NAME,
+            GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME
     ]
 
     /**
      * Name of settings file to use. String is evaluated using {@link org.gradle.api.Project#file(java.lang.Object)}.
      * Defaults to $USER_HOME/.m2/settings.xml.
      */
-    String userSettingsFileName = System.getProperty("user.home") + "/.m2/settings.xml"
+    String userSettingsFileName = MavenConstants.DEFAULT_MAVEN_SETTINGS_FILE_NAME
 
     /**
      * List of profile ids to treat as active.
@@ -61,6 +63,12 @@ class MavenSettingsPluginExtension {
 
     public File getUserSettingsFile() {
         return scopeUtilizer.scope instanceof Project ? ((Project) scopeUtilizer.scope).file(userSettingsFileName) : new File(userSettingsFileName)
+    }
+
+    public boolean isNonDefaultUserSettingsFileConfigured() {
+        File configured = getUserSettingsFile()?.canonicalFile
+        File defaultFile = MavenConstants.DEFAULT_MAVEN_SETTINGS_FILE.canonicalFile
+        return configured != defaultFile
     }
 
     /**

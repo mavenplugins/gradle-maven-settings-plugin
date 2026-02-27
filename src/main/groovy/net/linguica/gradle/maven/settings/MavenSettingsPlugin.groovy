@@ -17,9 +17,9 @@
 package net.linguica.gradle.maven.settings
 
 import groovy.transform.CompileStatic
-import io.github.mhoffrog.gradle.scope.IGradlePluginScopeUtilizer
-import io.github.mhoffrog.gradle.scope.impl.GradlePluginProjectScopeUtilizer
-import io.github.mhoffrog.gradle.scope.impl.GradlePluginSettingsScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.scope.impl.GradlePluginProjectScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.scope.impl.GradlePluginSettingsScopeUtilizer
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
