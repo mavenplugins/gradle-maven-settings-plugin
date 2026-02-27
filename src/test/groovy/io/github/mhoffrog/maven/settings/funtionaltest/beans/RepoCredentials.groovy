@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 the original author or authors.
+ * Copyright 2026 (c) mhoffrog.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package net.linguica.gradle.maven.settings
+package io.github.mhoffrog.maven.settings.funtionaltest.beans
 
-import net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest
+class RepoCredentials {
 
-abstract class AbstractMavenSettingsTest extends AbstractCommonMavenSettingsTest {
+    final String repoContext
+    final String repoName
+    final String username
+    final String password
 
-    void addPluginWithSettings() {
-        project.with {
-            apply plugin: MavenSettingsPlugin
-
-            mavenSettings {
-                userSettingsFileName = mavenSettingsFileName
-            }
-        }
+    RepoCredentials(String repoContext, String repoName, String username, String password) {
+        this.repoContext = repoContext
+        this.repoName = repoName
+        this.username = username
+        this.password = password
     }
 }
