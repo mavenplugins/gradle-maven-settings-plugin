@@ -24,8 +24,16 @@ dependencies {
     implementation "org.apache.maven:maven-core:$mavenVersion"
     implementation 'org.codehaus.plexus:plexus-cipher:2.0'
     implementation 'org.codehaus.plexus:plexus-sec-dispatcher:2.0'
-    testImplementation 'junit:junit:4.13.2'
+
     testImplementation 'org.hamcrest:hamcrest-library:3.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.3'
+    testImplementation gradleTestKit() // required for functional tests with GradleRunner
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // required for JUnit5, do not specify a version here!
+}
+
+tasks.withType(Test).configureEach {
+    // Using JUnit5 Platform for running tests
+    useJUnitPlatform()
 }
 
 java {
@@ -36,8 +44,9 @@ java {
 // Get project properties as a Map for usage in processResources task to expand properties in **/*-expanded.properties files
 // to fix Gradle 9 deprecation warning about calling project in processResources during runtime
 Map projectProperties = project.properties
+
 processResources {
-    filesMatching("**/*-expanded.properties") {
+    filesMatching("**/*-expanded.properties") { FileCopyDetails details ->
         expand projectProperties
     }
 }
