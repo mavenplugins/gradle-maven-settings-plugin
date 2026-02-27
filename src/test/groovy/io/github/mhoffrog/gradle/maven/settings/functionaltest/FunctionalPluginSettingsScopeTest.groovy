@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.maven.settings.funtionaltest
+package io.github.mhoffrog.gradle.maven.settings.functionaltest
 
 import io.github.mhoffrog.gradle.maven.settings.GradleConstants
-import io.github.mhoffrog.maven.settings.funtionaltest.beans.RepoCredentials
-import io.github.mhoffrog.maven.settings.funtionaltest.beans.RepositoryBean
+import net.linguica.gradle.maven.settings.test.common.beans.RepoCredentials
+import net.linguica.gradle.maven.settings.test.common.beans.RepositoryBean
 import org.apache.maven.settings.Mirror
 import org.apache.maven.settings.Profile
 import org.apache.maven.settings.Server
@@ -189,8 +189,8 @@ class FunctionalPluginSettingsScopeTest extends AbstractFunctionalPluginTest {
         RepositoryBean repoBean = new RepositoryBean('central', 'https://repo1.maven.org/maven2/')
         expectEffectivePluginManagementRepositories([repoBean])
         expectEffectiveDependencyRepositories([repoBean])
-        expectCredentials([new RepoCredentials('Effective pluginManagement', 'central', TEST_USER_NAME, TEST_USER_PASSWORD)])
-        expectCredentials([new RepoCredentials('Effective dependency', 'central', TEST_USER_NAME, TEST_USER_PASSWORD)])
+        expectCredentials([new RepoCredentials('Effective pluginManagement', 'central', TEST_USER_NAME, TEST_USER_PASSWORD),
+                           new RepoCredentials('Effective dependency', 'central', TEST_USER_NAME, TEST_USER_PASSWORD)])
         performTest()
     }
 
@@ -204,7 +204,7 @@ class FunctionalPluginSettingsScopeTest extends AbstractFunctionalPluginTest {
             mavenLocal()
         """)
         expectEffectiveDependencyRepositories([new RepositoryBean(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, getMavenLocalTestDir().toURI().toString())])
-        performTest(true)
+        performTest()
     }
 
 }

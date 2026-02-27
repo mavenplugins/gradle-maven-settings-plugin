@@ -39,16 +39,21 @@ abstract class AbstractCommonMavenSettingsTest {
     static final String TEST_USER_NAME = 'first.last'
     static final String TEST_USER_PASSWORD = 'secret'
 
-    private File mavenSettingsFile
-    private File mavenSettingsDir = new File('build/tmp/.m2/')
     Project project
     URI gradleRuntimeDefaultMavenLocalURI
 
     @TempDir
     private File mavenLocalRootDir
 
+    @TempDir
+    private File testRootDir
+    private File mavenSettingsDir
+    private File mavenSettingsFile
+
     @BeforeEach
     void createSettingsXml() {
+        mavenSettingsDir = new File(testRootDir, '.m2')
+        mavenSettingsDir.mkdirs()
         mavenSettingsFile = new File(mavenSettingsDir, 'settings.xml')
         project = new ProjectBuilder().build()
         ((DefaultRepositoryHandler) new ProjectBuilder().build().repositories).mavenLocal {

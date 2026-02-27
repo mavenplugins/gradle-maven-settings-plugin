@@ -1,4 +1,4 @@
-package io.github.mhoffrog.maven.settings.funtionaltest.beans
+package net.linguica.gradle.maven.settings.test.common.beans
 
 class RepositoryBean {
     final String name

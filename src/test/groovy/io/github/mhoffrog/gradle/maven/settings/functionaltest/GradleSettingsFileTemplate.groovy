@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.github.mhoffrog.maven.settings.funtionaltest
+package io.github.mhoffrog.gradle.maven.settings.functionaltest
 
-import net.linguica.gradle.maven.settings.AbstractMavenSettingsTest
+import static net.linguica.gradle.maven.settings.test.common.AbstractCommonMavenSettingsTest.PLUGIN_ID
 
 class GradleSettingsFileTemplate {
 
@@ -26,7 +26,7 @@ class GradleSettingsFileTemplate {
 
     private String mavenSettingsFileName
 
-    private final String pluginId = AbstractMavenSettingsTest.PLUGIN_ID
+    private final String pluginId = PLUGIN_ID
 
     private List<String> mirrorExclusions = []
 

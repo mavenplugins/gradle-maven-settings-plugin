@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package net.linguica.gradle.maven.settings
+package net.linguica.gradle.maven.settings.test
 
 import io.github.mhoffrog.gradle.maven.settings.GradleConstants
+import net.linguica.gradle.maven.settings.MavenSettingsPlugin
 import org.apache.maven.settings.Mirror
 import org.apache.maven.settings.Profile
 import org.apache.maven.settings.Server
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 import static org.hamcrest.MatcherAssert.assertThat
 import static org.hamcrest.Matchers.*
-import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
@@ -255,8 +256,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertEquals(TEST_USER_NAME, project.repositories.central.credentials.username)
-        assertEquals(TEST_USER_PASSWORD, project.repositories.central.credentials.password)
+        Assertions.assertEquals(TEST_USER_NAME, project.repositories.central.credentials.username)
+        Assertions.assertEquals(TEST_USER_PASSWORD, project.repositories.central.credentials.password)
     }
 
     @Test
@@ -302,8 +303,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertEquals(TEST_USER_NAME, project.publishing.repositories.central.credentials.username)
-        assertEquals(TEST_USER_PASSWORD, project.publishing.repositories.central.credentials.password)
+        Assertions.assertEquals(TEST_USER_NAME, project.publishing.repositories.central.credentials.username)
+        Assertions.assertEquals(TEST_USER_PASSWORD, project.publishing.repositories.central.credentials.password)
     }
 
     @Test
