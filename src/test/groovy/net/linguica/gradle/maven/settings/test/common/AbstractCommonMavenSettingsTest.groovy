@@ -16,6 +16,7 @@
 
 package net.linguica.gradle.maven.settings.test.common
 
+import io.github.mhoffrog.gradle.maven.settings.utils.PluginResourcesUtil
 import org.apache.maven.settings.io.DefaultSettingsWriter
 import org.apache.maven.settings.io.SettingsWriter
 import org.gradle.api.Project
@@ -26,7 +27,7 @@ import org.junit.jupiter.api.io.TempDir
 
 abstract class AbstractCommonMavenSettingsTest {
 
-    static final String PLUGIN_ID = 'io.github.mavenplugins.maven-settings'
+    protected static final String PLUGIN_ID = "${PluginResourcesUtil.pluginId}"
 
     // Testdata constants
     static final String TEST_MIRROR_ID = 'myrepo'

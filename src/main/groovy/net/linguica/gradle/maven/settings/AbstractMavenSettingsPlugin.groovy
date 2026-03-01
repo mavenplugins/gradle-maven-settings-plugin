@@ -18,6 +18,7 @@ package net.linguica.gradle.maven.settings
 
 import groovy.transform.CompileStatic
 import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.utils.PluginResourcesUtil
 import org.apache.maven.model.Profile
 import org.apache.maven.model.building.ModelProblemCollector
 import org.apache.maven.model.building.ModelProblemCollectorRequest
@@ -43,9 +44,10 @@ import java.util.Map.Entry
 
 @CompileStatic
 abstract class AbstractMavenSettingsPlugin {
+
     public static final String MAVEN_SETTINGS_EXTENSION_NAME = "mavenSettings"
 
-    private static String LOG_PREFIX_TEMPLATE
+    private static final String LOG_PREFIX_TEMPLATE
 
     private static final String LOG_PREFIX_SCOPE_TOKEN = '@SCOPE@'
 
@@ -57,23 +59,8 @@ abstract class AbstractMavenSettingsPlugin {
 
     private Logger logger
 
-    private Mirror globalMirror
-
-    private Mirror externalMirror
-
-    private Mirror centralMirror
-
     static {
-        final Properties properties = new Properties()
-        final String propertiesResourcePath = '/maven-settings-plugin-expanded.properties'
-        final URL propsUrl = AbstractMavenSettingsPlugin.class.getResource(propertiesResourcePath)
-        if (propsUrl == null) {
-            throw new IllegalStateException("Resource '${propertiesResourcePath}' not found on classpath.")
-        }
-        propsUrl.withInputStream {
-            properties.load(it)
-        }
-        LOG_PREFIX_TEMPLATE = "MavenSettings[${LOG_PREFIX_SCOPE_TOKEN}] v${properties['plugin.version']}:"
+        LOG_PREFIX_TEMPLATE = "${PluginResourcesUtil.pluginNameInLogPrefix}[${LOG_PREFIX_SCOPE_TOKEN}] v${PluginResourcesUtil.pluginVersion}:"
     }
 
     void apply(IGradlePluginScopeUtilizer scopeUtilizerParam) {
@@ -102,7 +89,6 @@ abstract class AbstractMavenSettingsPlugin {
                         applyMavenLocalFromUserSettingsFileConfigured(extension, repos)
                     }
                 }
-                determineMirrors()
                 registerMirrors(extension, scopeUtilizer.pluginManagementRepositories)
                 registerMirrors(extension, scopeUtilizer.repositories)
                 applyRepoCredentials('PluginManagement', scopeUtilizer.pluginManagementRepositories)
@@ -119,6 +105,9 @@ abstract class AbstractMavenSettingsPlugin {
             mavenSettings = settingsLoader.loadSettings()
         } catch (SettingsBuildingException e) {
             throw new GradleScriptException("${logPrefix} Unable to read local Maven settings.", e)
+        }
+        if (mavenSettings.localRepository) {
+            logger.info("${logPrefix} localRepository is defined in Maven settings file as: ${mavenSettings.localRepository}")
         }
     }
 
@@ -157,21 +146,6 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void determineMirrors() {
-        globalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('*') }
-        if (globalMirror != null) {
-            logger.info("${logPrefix} Found global mirror in settings.xml: '${resolveMirrorName(globalMirror)}' at '${globalMirror.url}'.")
-        }
-        externalMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('external:*') }
-        if (externalMirror != null) {
-            logger.info("${logPrefix} Found external mirror in settings.xml: '${resolveMirrorName(externalMirror)}' at '${externalMirror.url}'.")
-        }
-        centralMirror = mavenSettings.mirrors.find { it.mirrorOf.split(',').collect { token -> token.trim() }.contains('central') }
-        if (centralMirror != null) {
-            logger.info("${logPrefix} Found central mirror in settings.xml:  '${resolveMirrorName(centralMirror)}' at '${centralMirror.url}'.")
-        }
-    }
-
     private void applyMavenLocalFromUserSettingsFileConfigured(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
         repositories?.all { repo ->
             if (repo instanceof MavenArtifactRepository
@@ -201,76 +175,97 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void registerMirrors(final MavenSettingsPluginExtension extension, final RepositoryHandler repositories) {
-        if (globalMirror != null) {
-            createMirrorRepository(extension, repositories, globalMirror)
-            return
-        }
-
-        if (externalMirror != null) {
-            createMirrorRepository(extension, repositories, externalMirror) { MavenArtifactRepository repo ->
-                // only match repositories not on localhost and not file based
-                if (repo.url.scheme == 'file') {
-                    return false
-                }
-                try {
-                    InetAddress host = InetAddress.getByName(repo.url.host)
-                    return !(host.anyLocalAddress || host.isLoopbackAddress() || NetworkInterface.getByInetAddress(host) != null)
-                } catch (UnknownHostException ignored) {
-                    // Cannot resolve hostname - treat as external
-                    return true
-                }
-            }
-            return
-        }
-
-        if (centralMirror != null) {
-            createMirrorRepository(extension, repositories, centralMirror) { MavenArtifactRepository repo ->
-                ArtifactRepositoryContainer.MAVEN_CENTRAL_URL.startsWith(repo.url.toString())
-            }
-        }
-    }
-
-    private void applyRepoCredentials(String repoContext, @Nullable RepositoryHandler repositories) {
-        repositories?.all { repo ->
+    private void registerMirrors(MavenSettingsPluginExtension extension, RepositoryHandler repositories) {
+        List<MavenArtifactRepository> reposToRemove = []
+        Map<String, Mirror> mirrorsToAdd = new HashMap<>()
+        repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository) {
-                logger.info("${logPrefix} ${repoContext} repository '${repo.name}' '${repo.url}' found.")
-                mavenSettings.servers.each { server ->
-                    if (repo.name == server.id) {
-                        addCredentials(logger, server, repo as MavenArtifactRepository)
+                if (extension.mirrorExclusions.contains(repo.name)) {
+                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
+                } else {
+                    Mirror mirror = findMirrorMatchingForRepo(repo)
+                    if (mirror) {
+                        logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
+                        mirrorsToAdd.put(mirror.id, mirror)
+                        reposToRemove.add(repo)
                     }
                 }
             }
         }
-    }
 
-    private void createMirrorRepository(MavenSettingsPluginExtension extension, RepositoryHandler repositories, Mirror mirror) {
-        createMirrorRepository(extension, repositories, mirror) { true }
-    }
+        reposToRemove.each { repositories.remove(it) }
 
-    private void createMirrorRepository(MavenSettingsPluginExtension extension, RepositoryHandler repositories, Mirror mirror, Closure<Boolean> predicate) {
-        List<String> excludedRepositoryNames = mirror.mirrorOf.split(',').collect { it.trim() }.findAll { it.startsWith("!") }.collect { it.substring(1) }
-        List toRemove = []
-        repositories?.each { repo ->
-            if (repo instanceof MavenArtifactRepository && repo.url != URI.create(mirror.url) && predicate(repo)) {
-                if (excludedRepositoryNames.contains(repo.name)) {
-                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by mirrorOf '${mirror.mirrorOf}'. Skipping.")
-                } else if (extension.mirrorExclusions.contains(repo.name)) {
-                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
-                } else {
-                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
-                    toRemove.add(repo)
-                }
+        mirrorsToAdd.values().each { mirror ->
+            repositories.maven { MavenArtifactRepository repo ->
+                repo.name = mirror.id
+                repo.url = mirror.url
             }
         }
+    }
 
-        if (!toRemove.empty) {
-            toRemove.each { repositories.remove(it) }
-            Server server = mavenSettings.getServer(mirror.id)
-            repositories.maven { MavenArtifactRepository repo ->
-                repo.name = resolveMirrorName(mirror)
-                repo.url = mirror.url
-                addCredentials(logger, server, repo)
+    private Mirror findMirrorMatchingForRepo(final MavenArtifactRepository repo) {
+        for (Mirror mirror : mavenSettings.mirrors) {
+            Mirror mirrorFound = null
+            boolean isBreakMirrorOf = false
+            boolean isExternalUnknownHost = false
+            for (String mirrorOf : mirror.mirrorOf.split(',').collect { it.trim() }) {
+                switch (mirrorOf) {
+                    case '*':
+                        mirrorFound = mirror
+                        break
+                    case 'external:*':
+                        if (repo.url.scheme != 'file') {
+                            try {
+                                InetAddress host = InetAddress.getByName(repo.url.host)
+                                if (!(host.anyLocalAddress || host.isLoopbackAddress() || NetworkInterface.getByInetAddress(host) != null)) {
+                                    mirrorFound = mirror
+                                }
+                            } catch (UnknownHostException ignored) {
+                                // Cannot resolve hostname - treat as external
+                                logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf 'external:*' in mirror '${resolveMirrorName(mirror)}' at '${mirror.url}' (hostname cannot be resolved, treating as external).")
+                                mirrorFound = mirror
+                                isExternalUnknownHost = true
+                            }
+                        }
+                        break
+                    case 'central':
+                        if (repo.url.toString().startsWith(ArtifactRepositoryContainer.MAVEN_CENTRAL_URL)) {
+                            mirrorFound = mirror
+                        }
+                        break
+                    default:
+                        if (mirrorOf == repo.name) {
+                            mirrorFound = mirror
+                            isBreakMirrorOf = true
+                        } else if (mirrorOf == "!${repo.name}") {
+                            logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror '${resolveMirrorName(mirror)}' at '${mirror.url}' by mirrorOf '!${repo.name}'. Skipping.")
+                            mirrorFound = null
+                            isBreakMirrorOf = true
+                        }
+                }
+                if (isBreakMirrorOf) {
+                    break
+                }
+            }
+            if (mirrorFound) {
+                if (!isExternalUnknownHost) { // log only, if not yet logged as external due to unknown host
+                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf '${mirrorFound.mirrorOf}' in mirror '${resolveMirrorName(mirrorFound)}' at '${mirrorFound.url}'.")
+                }
+                return mirrorFound
+            }
+        }
+        return null
+    }
+
+    private void applyRepoCredentials(String repoContext, @Nullable RepositoryHandler repositories) {
+        repositories?.each { repo ->
+            if (repo instanceof MavenArtifactRepository) {
+                logger.info("${logPrefix} ${repoContext} repository '${repo.name}' '${repo.url}' found.")
+                mavenSettings.servers.each { server ->
+                    if (repo.name == server.id) {
+                        addCredentials(server, repo)
+                    }
+                }
             }
         }
     }
@@ -279,7 +274,7 @@ abstract class AbstractMavenSettingsPlugin {
         return mirror.name ?: mirror.id
     }
 
-    private addCredentials(Logger logger, Server server, MavenArtifactRepository repo) {
+    private addCredentials(Server server, MavenArtifactRepository repo) {
         if (server?.username != null && server?.password != null) {
             repo.credentials {
                 it.username = server.username
