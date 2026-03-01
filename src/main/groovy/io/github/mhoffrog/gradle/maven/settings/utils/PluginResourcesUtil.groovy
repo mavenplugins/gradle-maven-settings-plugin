@@ -35,8 +35,6 @@ class PluginResourcesUtil {
     }
 
     static String getPluginId() {
-        //return StringUtils.removeSuffix("${getPluginGroupId()}.${getPluginArtifactId()}", '-plugin')
-        //return "${pluginGroupId}.${pluginArtifactId}"
         return getProperty("plugin.id", true)
     }
 
