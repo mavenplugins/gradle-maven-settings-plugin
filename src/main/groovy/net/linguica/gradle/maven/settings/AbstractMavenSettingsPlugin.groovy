@@ -207,7 +207,6 @@ abstract class AbstractMavenSettingsPlugin {
         for (Mirror mirror : mavenSettings.mirrors) {
             Mirror mirrorFound = null
             boolean isBreakMirrorOf = false
-            boolean isExternalUnknownHost = false
             for (String mirrorOf : mirror.mirrorOf.split(',').collect { it.trim() }) {
                 switch (mirrorOf) {
                     case '*':
@@ -215,16 +214,13 @@ abstract class AbstractMavenSettingsPlugin {
                         break
                     case 'external:*':
                         if (repo.url.scheme != 'file') {
-                            try {
-                                InetAddress host = InetAddress.getByName(repo.url.host)
-                                if (!(host.anyLocalAddress || host.isLoopbackAddress() || NetworkInterface.getByInetAddress(host) != null)) {
-                                    mirrorFound = mirror
-                                }
-                            } catch (UnknownHostException ignored) {
-                                // Cannot resolve hostname - treat as external
-                                logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf 'external:*' in mirror '${resolveMirrorName(mirror)}' at '${mirror.url}' (hostname cannot be resolved, treating as external).")
+                            String host = repo.url.host
+                            boolean isLocalHost = !host ||
+                                    host.equalsIgnoreCase('localhost') ||
+                                    host == '127.0.0.1' ||
+                                    host == '::1'
+                            if (!isLocalHost) {
                                 mirrorFound = mirror
-                                isExternalUnknownHost = true
                             }
                         }
                         break
@@ -248,9 +244,7 @@ abstract class AbstractMavenSettingsPlugin {
                 }
             }
             if (mirrorFound) {
-                if (!isExternalUnknownHost) { // log only, if not yet logged as external due to unknown host
-                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf '${mirrorFound.mirrorOf}' in mirror '${resolveMirrorName(mirrorFound)}' at '${mirrorFound.url}'.")
-                }
+                logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf '${mirrorFound.mirrorOf}' in mirror '${resolveMirrorName(mirrorFound)}' at '${mirrorFound.url}'.")
                 return mirrorFound
             }
         }

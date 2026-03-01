@@ -86,7 +86,7 @@ String pluginRepoUrlAsString = 'https://github.com/mavenplugins/gradle-maven-set
 
 String projectNamePostFixExpected = '-plugin' // expected postfix for plugin project name to generate plugin id by removing this postfix from project name and prefixing with group
 assert rootProject.name.endsWith(projectNamePostFixExpected): "Expected plugin project name to end with '${projectNamePostFixExpected}' for consistent plugin id generation, but found '${rootProject.name}'"
-properties.ext.pluginId = "${group}.${rootProject.name.replace(projectNamePostFixExpected, '')}" // generate plugin id by removing expected postfix from project name and prefixing with group
+properties.ext.pluginId = "${group}.${rootProject.name.replaceFirst('/' + projectNamePostFixExpected + '$/', '')}" // generate plugin id by removing expected postfix from project name and prefixing with group
 gradlePlugin {
     website = "${pluginWebSiteUrlAsString}"
     vcsUrl = "${pluginRepoUrlAsString}"
