@@ -2,7 +2,7 @@
 
 [![Apache License](https://img.shields.io/github/license/mavenplugins/gradle-maven-settings-plugin?label=License)](./LICENSE.txt)
 [![CI](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.mavenplugins.maven-settings/io.github.mavenplugins.maven-settings.gradle.plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.mavenplugins.maven-settings/io.github.mavenplugins.maven-settings.gradle.plugin)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mavenplugins.gradle.maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.mavenplugins.gradle.maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin)
 
 This Gradle plugin provides a migration path for projects coming from a Maven ecosystem.
 It exposes standard Maven configurations located in [settings files](http://maven.apache.org/settings.html) to your
@@ -45,11 +45,11 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 <!-- This plugin is hosted on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.mavenplugins.maven-settings). -->
 This plugin is hosted
-on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/maven-settings/io.github.mavenplugins.maven-settings.gradle.plugin).
+on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/gradle/maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin).
 To use the plugin, add the following to your `build.gradle` file.
 
     plugins {
-      id 'io.github.mavenplugins.maven-settings' version '1.0.1'
+      id 'io.github.mavenplugins.gradle.maven-settings' version '1.0.1'
     }
 
 For Gradle 2.0 or earlier you must add the following:
@@ -64,7 +64,7 @@ For Gradle 2.0 or earlier you must add the following:
         }
     }
 
-    apply plugin: 'io.github.mavenplugins.maven-settings'
+    apply plugin: 'io.github.mavenplugins.gradle.maven-settings'
 
 ## Mirrors
 
