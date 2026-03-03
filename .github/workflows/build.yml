@@ -39,10 +39,29 @@ jobs:
       fail-fast: false
       matrix:
         #os: [ubuntu-latest, macos-15-intel, windows-latest]
-        os: [ubuntu-latest]
+        os: [ ubuntu-latest ]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
+
+      - name: Determine project version
+        id: version
+        shell: bash
+        run: |
+          # Extract the version from gradle.properties, removing any trailing whitespace
+          PROJECT_VERSION=$(sed -n 's/^version= *\([a-zA-Z0-9.-]*\) *$/\1/p' gradle.properties | sed 's/[[:space:]]*$//')
+          echo "PROJECT_VERSION is: '${PROJECT_VERSION}'"
+          echo "version=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
+          if [[ "${PROJECT_VERSION}" == *-SNAPSHOT ]]; then
+            echo "isSnapshotVersion=true" >> $GITHUB_OUTPUT
+          else
+            echo "isSnapshotVersion=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log project version
+        run: |
+          echo "Project version: '${{ steps.version.outputs.version }}'"
+          echo "Is Snapshot:     ${{ steps.version.outputs.isSnapshotVersion }}"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -61,3 +80,20 @@ jobs:
         run: |
           [[ -z "${{ github.event.inputs.cloptions }}" ]] && options="-S" || options="${{ github.event.inputs.cloptions }}"
           ./gradlew build ${options}
+
+      - name: Deploy snapshot
+        if: steps.version.outputs.isSnapshotVersion == 'true'
+        env:
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.OSSRH_GPG_PUBLIC_KEY }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: |
+          echo "Deploy snapshot to Maven Cenntral."
+          ./gradlew publish jreleaserDeploy -S --info
+
+      #- name: Conditional step for releases only
+      #  if: steps.version.outputs.isSnapshotVersion == 'false'
+      #  run: echo "This is a release version!"
+
