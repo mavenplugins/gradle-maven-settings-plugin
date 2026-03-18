@@ -21,11 +21,11 @@ import net.linguica.gradle.maven.settings.MavenSettingsPlugin
 import org.apache.maven.settings.Mirror
 import org.apache.maven.settings.Profile
 import org.apache.maven.settings.Server
-import org.junit.jupiter.api.Assertions
+import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository
 import org.junit.jupiter.api.Test
 
-import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
+import static org.assertj.core.api.Assertions.assertThat
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
@@ -40,7 +40,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
     }
 
     @Test
-    void declareGlobalMirror() {
+    void shouldMirrorAllRepos() {
         withMavenSettings {
             mirrors.add new Mirror(id: TEST_MIRROR_ID, mirrorOf: '*', url: TEST_MIRROR_URL)
         }
@@ -56,9 +56,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(2))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
+        assertThat(project.repositories.names).containsOnly(TEST_MIRROR_ID, GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME)
     }
 
     @Test
@@ -86,10 +84,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('some-repo'))))
+        assertThat(project.repositories.names).containsOnly(TEST_MIRROR_ID, GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, "some-repo")
     }
 
     @Test
@@ -113,10 +108,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myLocal'))))
+        assertThat(project.repositories.names).containsOnly(TEST_MIRROR_ID, GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, 'myLocal')
     }
 
     @Test
@@ -140,10 +132,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myLocal'))))
+        assertThat(project.repositories.names).containsOnly(TEST_MIRROR_ID, GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, 'myLocal')
     }
 
     @Test
@@ -167,10 +156,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(3))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(TEST_MIRROR_ID))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myRemote'))))
+        assertThat(project.repositories.names).containsOnly(TEST_MIRROR_ID, GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, 'myRemote')
     }
 
     @Test
@@ -193,9 +179,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(2))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo('myRemote'))))
+        assertThat(project.repositories.names).containsOnly(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME, 'myRemote')
     }
 
     @Test
@@ -212,7 +196,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.properties, hasEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE))
+        assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
     }
 
     @Test
@@ -234,7 +218,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.properties, hasEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE))
+        assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
     }
 
     @Test
@@ -256,8 +240,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        Assertions.assertEquals(TEST_USER_NAME, project.repositories.central.credentials.username)
-        Assertions.assertEquals(TEST_USER_PASSWORD, project.repositories.central.credentials.password)
+        assertEquals(TEST_USER_NAME, project.repositories.central.credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.repositories.central.credentials.password)
     }
 
     @Test
@@ -278,6 +262,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         }
 
         project.evaluate()
+
+        assertThat(project.repositories.findByName('flat')).isInstanceOf(FlatDirectoryArtifactRepository.class)
     }
 
     @Test
@@ -303,8 +289,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        Assertions.assertEquals(TEST_USER_NAME, project.publishing.repositories.central.credentials.username)
-        Assertions.assertEquals(TEST_USER_PASSWORD, project.publishing.repositories.central.credentials.password)
+        assertEquals(TEST_USER_NAME, project.publishing.repositories.central.credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.publishing.repositories.central.credentials.password)
     }
 
     @Test
@@ -323,9 +309,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         project.evaluate()
 
-        assertThat(project.repositories, hasSize(1))
-        assertThat(project.repositories, hasItem(hasProperty('name', equalTo(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME))))
-        assertThat(project.repositories, hasItem(hasProperty('url', equalTo(getMavenLocalTestDir().toURI()))))
+        assertThat(project.repositories.names).containsOnly(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME)
+        assertThat(project.repositories*.url).containsOnly(getMavenLocalTestDir().toURI())
     }
 
 }
