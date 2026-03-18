@@ -58,6 +58,18 @@ class MavenSettingsPluginExtension {
      */
     boolean exportGradleProps = true
 
+    /**
+     * Flag indicating whether or not repositories defined in the settings file should be added to the Gradle project.
+     * Defaults to true.
+     */
+    boolean addRepositories = true
+
+    /**
+     * Flag indicating whether or not plugin repositories defined in the settings file should be added to the Gradle pluginManagement.
+     * Defaults to false, as Maven plugin repositories are typically not needed for Gradle pluginManagement.
+     */
+    boolean addPluginRepositories = false
+
     MavenSettingsPluginExtension(IGradlePluginScopeUtilizer scopeUtilizer) {
         this.scopeUtilizer = scopeUtilizer
     }
