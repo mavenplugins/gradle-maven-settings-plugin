@@ -25,7 +25,7 @@ dependencies {
     implementation 'org.codehaus.plexus:plexus-cipher:2.0'
     implementation 'org.codehaus.plexus:plexus-sec-dispatcher:2.0'
 
-    testImplementation 'org.hamcrest:hamcrest-library:3.0'
+    testImplementation 'org.assertj:assertj-core:3.27.7'
     // JUnit 5 BOM pom to manage JUnit 5 dependencies versions in one place
     testImplementation platform('org.junit:junit-bom:5.14.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
