@@ -68,15 +68,16 @@ String stagingDeploySubDir = 'staging-deploy'
 // Common Gradle Plugin properties for consistent usage
 // within gradlePlugin and publishing configuration
 String pluginDisplayName = 'Maven Settings Plugin'
-String pluginDescription = "Gradle plugin for exposing Maven settings file configuration to Gradle projects.\n" +
-        "This plugin allows Gradle build scripts to access and use the configuration defined in the user's Maven settings.xml file (e.g. repositories, credentials, mirrors, etc.)\n" +
-        "to be used in Gradle repositories configuration and other relevant places.\n" +
-        "It is especially useful for sharing repository configuration and credentials across multiple Gradle projects without hardcoding them in each project.\n" +
-        "The plugin supports both global and user-specific Maven settings.xml files and respects Maven's rules for merging them together.\n" +
-        "The plugin also supports decryption of encrypted passwords in the Maven settings.xml file using the master password defined in the Maven settings-security.xml file.\n" +
-        "The plugin has been originally forked from https://github.com/rmanibus/gradle-maven-settings-plugin.\n" +
-        "A couple of enhancements and adequate usage in Project and Settings scope have been implemented since then.\n" +
-        "Look at the plugin's GitHub repository for more details and usage instructions."
+String pluginDescription = """
+    Gradle plugin for exposing Maven settings file configuration to Gradle Settings and projects.
+    Originally forked from https://github.com/rmanibus/gradle-maven-settings-plugin.
+    The plugin has been extended to be used in Settings and Project scope.
+    Allows Gradle settings and build scripts to access and use the configuration defined in the user's Maven settings.xml file.
+    Repositories, server credentials, mirrors and active profile properties are provided to Gradle configuration.
+    The plugin supports global and user-specific Maven settings.xml files and respects Maven's rules for merging them.
+    Decryption of encrypted passwords in the Maven settings.xml file is implemented making use of the Maven settings-security.xml.
+    Look at the plugin's GitHub repository for usage instructions and details on enhancements of the original implementation.
+""".stripIndent()
 String pluginWebSiteUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
 String pluginOrganization = 'mavenplugins'
 String pluginOrganizationUrlAsString = 'https://github.com/mavenplugins'
@@ -84,9 +85,9 @@ String pluginOrganizationUrlAsString = 'https://github.com/mavenplugins'
 String pluginRepoUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
 
 
-String projectNamePostFixExpected = '-plugin' // expected postfix for plugin project name to generate plugin id by removing this postfix from project name and prefixing with group
-assert rootProject.name.endsWith(projectNamePostFixExpected): "Expected plugin project name to end with '${projectNamePostFixExpected}' for consistent plugin id generation, but found '${rootProject.name}'"
-properties.ext.pluginId = "${group}.${rootProject.name.replaceFirst(projectNamePostFixExpected + '$', '')}" // generate plugin id by removing expected postfix from project name and prefixing with group
+//Set Plugin ID as this projects Maven groupId.artifactId:
+properties.ext.pluginId = "${group}.${rootProject.name}"
+
 gradlePlugin {
     website = "${pluginWebSiteUrlAsString}"
     vcsUrl = "${pluginRepoUrlAsString}"
