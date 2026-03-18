@@ -2,7 +2,7 @@
 
 [![Apache License](https://img.shields.io/github/license/mavenplugins/gradle-maven-settings-plugin?label=License)](./LICENSE.txt)
 [![CI](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml/badge.svg)](https://github.com/mavenplugins/gradle-maven-settings-plugin/actions/workflows/build.yml)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.mavenplugins.gradle.maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.mavenplugins.gradle.maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mavenplugins.gradle/maven-settings?label=Maven%20Central)](https://search.maven.org/artifact/io.github.mavenplugins.gradle/maven-settings)
 
 This Gradle plugin provides a migration path for projects coming from a Maven ecosystem.
 It exposes standard Maven configurations located in [settings files](http://maven.apache.org/settings.html) to your
@@ -23,7 +23,7 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
   application by default to prevent accidental overriding of important repositories. This list is configurable via the
   `mirrorExclusions` property.
 - Apply `localRepository` from a `userSettingsFileName` configured settings file to the Gradle `MavenLocal` repo if
-  `localRepository` is set in there. (Since plugin version `1.0.1`).
+  `localRepository` is set in there. (Since plugin version `1.1.0`).
 
 ### Log Output
 
@@ -39,17 +39,17 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 - Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `9.3.1`.
 - Java: The plugin is compatible with `Java 8` and later.
-- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies on Maven `3.9.6`.
+- Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies on Maven `3.9.12`.
 
 ## Usage
 
 <!-- This plugin is hosted on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.mavenplugins.maven-settings). -->
 This plugin is hosted
-on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/gradle/maven-settings/io.github.mavenplugins.gradle.maven-settings.gradle.plugin).
+on [Maven Central](https://repo1.maven.org/maven2/io/github/mavenplugins/gradle/maven-settings).
 To use the plugin, add the following to your `build.gradle` file.
 
     plugins {
-      id 'io.github.mavenplugins.gradle.maven-settings' version '1.0.1'
+      id 'io.github.mavenplugins.gradle.maven-settings' version '1.1.0'
     }
 
 For Gradle 2.0 or earlier you must add the following:
@@ -60,7 +60,7 @@ For Gradle 2.0 or earlier you must add the following:
         }
         
         dependencies {
-            classpath 'io.github.mavenplugins.gradle:maven-settings-plugin:1.0.1'
+            classpath 'io.github.mavenplugins.gradle:maven-settings:1.1.0'
         }
     }
 
@@ -125,8 +125,8 @@ The plugin will also attempt to apply credentials to repositories configured usi
 ## Profiles
 
 Profiles defined in a `settings.xml` will have their properties exported to the Gradle project when the profile is
-considered
-active. Active profiles are those listed in the `<activeProfiles>` section of the `settings.xml`, the `activeProfiles`
+considered active. Active profiles are those listed in the `<activeProfiles>` section of the `settings.xml`, the
+`activeProfiles`
 property of the `mavenSettings {...}` configuration closure, or those that satisfy the given profile's `<activation>`
 criteria.
 
