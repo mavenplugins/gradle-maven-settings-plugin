@@ -18,11 +18,13 @@ package net.linguica.gradle.maven.settings.test
 
 import io.github.mhoffrog.gradle.maven.settings.GradleConstants
 import net.linguica.gradle.maven.settings.MavenSettingsPlugin
-import org.apache.maven.settings.Mirror
-import org.apache.maven.settings.Profile
-import org.apache.maven.settings.Server
+import org.apache.maven.settings.*
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.artifacts.repositories.MavenRepositoryContentDescriptor
 import org.junit.jupiter.api.Test
+
+import java.util.function.Consumer
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -311,6 +313,151 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         assertThat(project.repositories.names).containsOnly(GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME)
         assertThat(project.repositories*.url).containsOnly(getMavenLocalTestDir().toURI())
+    }
+
+    @Test
+    void shouldAddRepositoriesFromActiveProfiles() {
+        withMavenSettings {
+
+            profiles.add new Profile(id: "profile1",
+                    repositories: [new Repository(
+                            id: "repoFromProfile1",
+                            url: "http://maven.repo1.com",
+                            releases: new RepositoryPolicy(enabled: false))
+                    ])
+            profiles.add new Profile(id: "profile2",
+                    repositories: [new Repository(
+                            id: "repoFromProfile2",
+                            url: "http://maven.repo2.com")
+                    ])
+            profiles.add new Profile(id: "profile3",
+                    repositories: [new Repository(
+                            id: "repoFromProfile3",
+                            url: "http://maven.repo3.com")
+                    ])
+
+            servers.add new Server(id: "repoFromProfile2", username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
+
+            activeProfiles = ["profile1", "profile2"]
+        }
+
+        addPluginWithSettings()
+
+        project.with {
+            repositories {
+                mavenLocal()
+                mavenCentral()
+                maven {
+                    it.name = "custom1"
+                    it.url = uri("https://maven.custom.com")
+                }
+            }
+        }
+
+        project.evaluate()
+
+        //No profile 3, profile is not activated
+        assertThat(project.repositories.names).containsOnly(
+                "repoFromProfile1",
+                "repoFromProfile2",
+                GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME,
+                GradleConstants.GRADLE_MAVEN_CENTRAL_REPO_NAME,
+                "custom1")
+
+        assertThat(project.repositories
+                .findAll { it instanceof MavenArtifactRepository }
+                .collect { (it as MavenArtifactRepository).url.toString() })
+                .contains(
+                        "https://repo.maven.apache.org/maven2/",
+                        "https://maven.custom.com",
+                        "http://maven.repo1.com",
+                        "http://maven.repo2.com"
+                )
+
+        // repoFromProfile1 has snapshots enabled
+        assertThat(project.repositories.getByName("repoFromProfile1") as MavenArtifactRepository)
+        // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
+                .satisfies((Consumer) {
+                    it.content {
+                        assertThat((it as MavenRepositoryContentDescriptor).snapshotsOnly())
+                    }
+                })
+
+        assertThat(project.repositories.getByName("repoFromProfile2") as MavenArtifactRepository)
+        // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
+                .satisfies((Consumer) {
+                    assertThat(it.credentials.username).isEqualTo(TEST_USER_NAME)
+                    assertThat(it.credentials.password).isEqualTo(TEST_USER_PASSWORD)
+                })
+    }
+
+    @Test
+    void mirrorsShouldOverrideReposWhenIdIsTheSame() {
+        withMavenSettings {
+
+            profiles.add new Profile(id: "profile1",
+                    repositories: [new Repository(
+                            id: "my.unique.repo",
+                            url: "http://maven.repo1.com"
+                    )])
+
+            mirrors.add new Mirror(id: "my.unique.repo", mirrorOf: "*", url: "http://maven.mirror.com")
+
+            activeProfiles = ["profile1"]
+        }
+
+        addPluginWithSettings()
+
+        project.with {
+            repositories {
+                mavenCentral()
+            }
+        }
+
+        project.evaluate()
+
+        // mirror should replace the one from profile (even with same id)
+        assertThat(project.repositories).hasSize(1).first()
+        // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
+                .satisfies((Consumer) {
+                    assertThat((it as MavenArtifactRepository).name).isEqualTo("my.unique.repo")
+                    assertThat((it as MavenArtifactRepository).url).isEqualTo(new URI("http://maven.mirror.com"))
+                })
+    }
+
+    @Test
+    void shouldWorkWithReleaseOnlyProfile() {
+        withMavenSettings {
+
+            profiles.add new Profile(id: "profile1",
+                    repositories: [new Repository(
+                            id: "releaseOnly",
+                            url: "http://maven.repo1.com",
+                            releases: new RepositoryPolicy(enabled: true))
+                    ])
+
+            activeProfiles = ["profile1"]
+        }
+
+        addPluginWithSettings()
+
+        project.with {
+            pluginManager.apply("maven-publish")
+            repositories {
+                mavenCentral()
+            }
+        }
+
+        project.evaluate()
+
+        assertThat(project.repositories.names).containsOnly("releaseOnly", GradleConstants.GRADLE_MAVEN_CENTRAL_REPO_NAME)
+        assertThat(project.repositories.getByName("releaseOnly") as MavenArtifactRepository)
+        // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
+                .satisfies((Consumer) {
+                    it.content {
+                        assertThat((it as MavenRepositoryContentDescriptor).releasesOnly())
+                    }
+                })
     }
 
 }

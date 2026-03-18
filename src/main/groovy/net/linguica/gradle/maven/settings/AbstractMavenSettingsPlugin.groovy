@@ -20,6 +20,7 @@ import groovy.transform.CompileStatic
 import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
 import io.github.mhoffrog.gradle.maven.settings.utils.PluginResourcesUtil
 import org.apache.maven.model.Profile
+import org.apache.maven.model.Repository
 import org.apache.maven.model.building.ModelProblemCollector
 import org.apache.maven.model.building.ModelProblemCollectorRequest
 import org.apache.maven.model.path.DefaultPathTranslator
@@ -149,11 +150,65 @@ abstract class AbstractMavenSettingsPlugin {
 
             }
         })
-
+        if (profiles.isEmpty()) {
+            logger.info("${logPrefix} No active Maven profiles.")
+            return
+        }
+        logger.info("${logPrefix} Active Maven profiles: ${profiles*.id.join(', ')}")
         profiles.each { profile ->
-            for (Entry entry : profile.properties) {
-                ExtensionContainer extensions = scopeUtilizer.extensions
-                extensions.getByType(ExtraPropertiesExtension).set(entry.key.toString(), entry.value.toString())
+            applyProfile(profile, extension)
+        }
+    }
+
+    private void applyProfile(Profile profile, MavenSettingsPluginExtension extension) {
+        logger.info("${logPrefix} Applying Maven profile ${profile.id}:")
+        for (Entry entry : profile.properties) {
+            ExtensionContainer extensions = scopeUtilizer.extensions
+            if (logger.isDebugEnabled()) {
+                logger.debug("${logPrefix}   Applying property '${entry.key}' with value '${entry.value}'.")
+            } else {
+                logger.info("${logPrefix}   Applying property '${entry.key}'.")
+            }
+            extensions.getByType(ExtraPropertiesExtension).set(entry.key.toString(), entry.value.toString())
+        }
+
+        if (extension.addRepositories) {
+            addGradleReposFromMavenRepos(profile, 'Dependency', scopeUtilizer.repositories, profile.repositories)
+        }
+        if (extension.addPluginRepositories) {
+            addGradleReposFromMavenRepos(profile, 'Plugin', scopeUtilizer.pluginManagementRepositories, profile.pluginRepositories)
+        }
+    }
+
+    private void addGradleReposFromMavenRepos(Profile profile, String repoType, RepositoryHandler gradleRepos, List<Repository> mavenRepos) {
+        if (gradleRepos == null) {
+            return
+        }
+        mavenRepos.each { mavenRepo ->
+            if (!gradleRepos*.name.contains(mavenRepo.id)) {
+                gradleRepos.maven { MavenArtifactRepository gradleRepo ->
+                    configureGradleRepoFromMavenRepo(gradleRepo, mavenRepo)
+                    logger.info("${logPrefix} Added ${repoType.toLowerCase()} repo '${mavenRepo.id}' '${mavenRepo.url}' from profile '${profile.id}' to Gradle ${scopeUtilizer.scopeName} scope.")
+                }
+            } else {
+                logger.info("${logPrefix} ${repoType} repo '${mavenRepo.id}' from profile '${profile.id}' is already defined in Gradle ${scopeUtilizer.scopeName} scope. Skipping to add.")
+            }
+        }
+    }
+
+    private void configureGradleRepoFromMavenRepo(MavenArtifactRepository gradleRepository, Repository mavenRepository) {
+        gradleRepository.name = mavenRepository.id
+        gradleRepository.url = new URI(mavenRepository.url)
+        if (mavenRepository.releases != null) {
+            gradleRepository.mavenContent { content ->
+                boolean isReleaseEnabled = mavenRepository.releases == null || mavenRepository.releases.isEnabled()
+                boolean isSnapshotsEnabled = mavenRepository.snapshots == null || mavenRepository.snapshots.isEnabled()
+                if (isReleaseEnabled && !isSnapshotsEnabled) {
+                    content.releasesOnly()
+                }
+                if (isSnapshotsEnabled && !isReleaseEnabled) {
+                    content.snapshotsOnly()
+                }
             }
         }
     }
