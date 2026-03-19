@@ -18,6 +18,7 @@ package io.github.mhoffrog.gradle.maven.settings.scope.impl
 
 
 import io.github.mhoffrog.gradle.maven.settings.scope.IGradlePluginScopeUtilizer
+import io.github.mhoffrog.gradle.maven.settings.utils.ExtensionAwareUtil
 import org.gradle.api.Project
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.initialization.Settings
@@ -68,8 +69,8 @@ abstract class ABaseGradlePluginScopeUtilizer<T extends ExtensionAware> implemen
     };
 
     @Override
-    Map getProperties() {
-        return getScope().properties
+    Map<String, Serializable> getProperties() {
+        return ExtensionAwareUtil.getSerializableProperties(getScope(), getLogger()).asImmutable()
     }
 
     @Override

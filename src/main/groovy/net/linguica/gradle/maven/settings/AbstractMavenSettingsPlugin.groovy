@@ -35,6 +35,7 @@ import org.gradle.api.GradleScriptException
 import org.gradle.api.artifacts.ArtifactRepositoryContainer
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import org.gradle.api.plugins.ExtensionContainer
 import org.gradle.api.plugins.ExtraPropertiesExtension
@@ -126,8 +127,19 @@ abstract class AbstractMavenSettingsPlugin {
         activationContext.setProjectDirectory(scopeUtilizer.projectDir)
         activationContext.setSystemProperties(System.getProperties())
         if (extension.exportGradleProps) {
-            Map properties = scopeUtilizer.properties
-            activationContext.setUserProperties(properties.findAll { key, value -> value != null }.collectEntries { key, value -> [key, value.toString()] } as Map<String, String>)
+            Map properties = scopeUtilizer.properties.findAll { key, value -> value != null }
+                    .collectEntries { key, value -> [key, value.toString()] } as Map<String, String>
+            activationContext.setUserProperties(properties)
+            if (properties.isEmpty()) {
+                logger.info("${logPrefix} No Gradle properties found to export.")
+            } else {
+                logger.info("${logPrefix} ${properties.size()} Gradle properties found to export.")
+                if (logger.isEnabled(LogLevel.DEBUG)) {
+                    properties.keySet().forEach { key ->
+                        logger.debug("${logPrefix} Export Gradle property '${key}'.")
+                    }
+                }
+            }
         }
 
         List<Profile> profiles = profileSelector.getActiveProfiles(mavenSettings.profiles.collect { return SettingsUtils.convertFromSettingsProfile(it) },
