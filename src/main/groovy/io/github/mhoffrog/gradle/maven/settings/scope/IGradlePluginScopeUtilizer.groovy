@@ -57,7 +57,7 @@ interface IGradlePluginScopeUtilizer<T> {
      *
      * @return the properties for the Gradle plugin scope.
      */
-    Map getProperties()
+    Map<String, Serializable> getProperties()
 
     /**
      * Gets the extensions container for the Gradle plugin scope.
