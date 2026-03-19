@@ -37,7 +37,7 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
 
 ### Compatibility
 
-- Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `9.3.1`.
+- Gradle: The plugin is compatible with Gradle `2.0` and later. It has been tested with Gradle `9.4.1`.
 - Java: The plugin is compatible with `Java 8` and later.
 - Maven: The plugin is compatible with Maven `3.x` settings files. It has dependencies on Maven `3.9.14`.
 
