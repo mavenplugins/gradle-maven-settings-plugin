@@ -31,7 +31,8 @@ class MavenSettingsPluginExtension {
     private static final List<String> DEFAULT_MIRROR_EXCLUSIONS = [
             GradleConstants.GRADLE_PLUGIN_PORTAL_REPO_NAME,
             GradleConstants.GOOGLE_REPO_NAME,
-            GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME
+            GradleConstants.GRADLE_MAVEN_LOCAL_REPO_NAME,
+            GradleConstants.MAVEN_CENTRAL_SNAPSHOTS_REPO_NAME
     ]
 
     /**

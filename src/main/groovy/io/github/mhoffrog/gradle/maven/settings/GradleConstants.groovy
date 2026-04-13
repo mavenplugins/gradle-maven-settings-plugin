@@ -26,6 +26,8 @@ class GradleConstants {
     // {@link ArtifactRepositoryContainer#DEFAULT_MAVEN_CENTRAL_REPO_NAME} - since Gradle 6.0
     static final String GRADLE_MAVEN_CENTRAL_REPO_NAME = 'MavenRepo'
 
+    static final String MAVEN_CENTRAL_SNAPSHOTS_REPO_NAME = 'MavenCentralSnapshots'
+
     // {@link DefaultRepositoryHandler#GRADLE_PLUGIN_PORTAL_REPO_NAME} - since Gradle 4.8
     static final String GRADLE_PLUGIN_PORTAL_REPO_NAME = 'Gradle Central Plugin Repository'
 

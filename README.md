@@ -143,8 +143,8 @@ properties are available.
 * `exportGradleProps` - Flag indicating whether or not Gradle project properties should be exported for the purposes of
   settings file property interpolation and profile activation. This defaults to `true`.
 * `mirrorExclusions` - List of repository names to be excluded from applying a mirror definition from settings.xml.
-  This defaults to `['Gradle Central Plugin Repository', 'Google', 'MavenLocal']`.
+  This defaults to `['Gradle Central Plugin Repository', 'Google', 'MavenLocal', 'MavenCentralSnapshots']`.
 * `defaultMirrorExclusions` - Read-only property representing the default list of repository names to be excluded from
   applying a mirror definition from settings.xml.
-  This is `['Gradle Central Plugin Repository', 'Google', 'MavenLocal']` and is intended to be used as a base when
-  extending `mirrorExclusions` to preserve default exclusions.
+  This is `['Gradle Central Plugin Repository', 'Google', 'MavenLocal', 'MavenCentralSnapshots']` and is intended to be
+  used as a base when extending `mirrorExclusions` to preserve default exclusions.
