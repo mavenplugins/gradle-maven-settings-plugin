@@ -49,7 +49,7 @@ jobs:
         shell: bash
         run: |
           # Extract the version from gradle.properties, removing any trailing whitespace
-          PROJECT_VERSION=$(sed -n 's/^version= *\([a-zA-Z0-9.-]*\) *$/\1/p' gradle.properties | sed 's/[[:space:]]*$//')
+          PROJECT_VERSION=$(sed -n 's/^version *= *\([a-zA-Z0-9.-]*\) *$/\1/p' gradle.properties | sed 's/[[:space:]]*$//')
           echo "PROJECT_VERSION is: '${PROJECT_VERSION}'"
           echo "version=${PROJECT_VERSION}" >> $GITHUB_OUTPUT
           if [[ "${PROJECT_VERSION}" == *-SNAPSHOT ]]; then
@@ -76,13 +76,27 @@ jobs:
       #    arguments: test
 
       - name: Build
+        id: build
         shell: bash
         run: |
           [[ -z "${{ github.event.inputs.cloptions }}" ]] && options="-S" || options="${{ github.event.inputs.cloptions }}"
+          # Continue on failed command:
+          set +e
           ./gradlew build ${options}
+          if [[ "$?" == "0" ]]; then
+            echo "isOk=true" >> $GITHUB_OUTPUT
+            echo "Build SUCCEEDED"
+          else 
+            echo "isOk=false" >> $GITHUB_OUTPUT
+            echo "Build FAILED"
+          fi
+          # Abort immediately on failed command:
+          set -e
 
-      - name: Deploy snapshot
+      - name: Deploy Snapshot
+        id: deploy
         if: ${{    steps.version.outputs.isSnapshotVersion == 'true'
+                && steps.build.outputs.isOk == 'true'
                 && github.event_name != 'pull_request'
              }}
         env:
@@ -92,10 +106,36 @@ jobs:
           JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: |
-          echo "Deploy snapshot to Maven Cenntral."
+          echo "Deploy to Maven Central Snapshots ..."
+          set +e
           ./gradlew publish jreleaserDeploy -S --info
+          if [[ "$?" == "0" ]]; then
+            echo "isOk=true" >> $GITHUB_OUTPUT
+            echo "Deploy SUCCEEDED"
+          else 
+            echo "isOk=false" >> $GITHUB_OUTPUT
+            echo "Deploy FAILED"
+          fi
+          set -e
 
       #- name: Conditional step for releases only
       #  if: steps.version.outputs.isSnapshotVersion == 'false'
       #  run: echo "This is a release version!"
 
+      - name: Attach build
+        #if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: build
+          path: |
+            build
+
+      - name: Fail job if build or deploy failed
+        # Note: deploy job is optional - so we check explicitely for 'false'!
+        if: ${{    steps.build.outputs.isOk != 'true'
+                || steps.deploy.outputs.isOk == 'false'
+             }}
+        shell: bash
+        run: |
+          echo "Enforce job failure since build or deploy step failed."
+          exit 1
