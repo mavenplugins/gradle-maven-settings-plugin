@@ -199,7 +199,7 @@ abstract class AbstractMavenSettingsPlugin {
     private void configureGradleRepoFromMavenRepo(MavenArtifactRepository gradleRepository, Repository mavenRepository) {
         gradleRepository.name = mavenRepository.id
         gradleRepository.url = new URI(mavenRepository.url)
-        if (mavenRepository.releases != null) {
+        if (mavenRepository.releases != null || mavenRepository.snapshots != null) {
             gradleRepository.mavenContent { content ->
                 boolean isReleaseEnabled = mavenRepository.releases == null || mavenRepository.releases.isEnabled()
                 boolean isSnapshotsEnabled = mavenRepository.snapshots == null || mavenRepository.snapshots.isEnabled()
