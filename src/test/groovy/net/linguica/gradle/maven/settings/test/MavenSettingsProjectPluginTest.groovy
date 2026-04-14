@@ -323,7 +323,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                     repositories: [new Repository(
                             id: "repoFromProfile1",
                             url: "http://maven.repo1.com",
-                            releases: new RepositoryPolicy(enabled: false))
+                            releases: new RepositoryPolicy(enabled: false),
+                            snapshots: new RepositoryPolicy(enabled: true))
                     ])
             profiles.add new Profile(id: "profile2",
                     repositories: [new Repository(
@@ -379,7 +380,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
                 .satisfies((Consumer) {
                     it.content {
-                        assertThat((it as MavenRepositoryContentDescriptor).snapshotsOnly())
+                        assertThat(isReleasesOnly(it as MavenRepositoryContentDescriptor)).isFalse()
+                        assertThat(isSnapshotsOnly(it as MavenRepositoryContentDescriptor)).isTrue()
                     }
                 })
 
@@ -433,7 +435,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                     repositories: [new Repository(
                             id: "releaseOnly",
                             url: "http://maven.repo1.com",
-                            releases: new RepositoryPolicy(enabled: true))
+                            releases: new RepositoryPolicy(enabled: true),
+                            snapshots: new RepositoryPolicy(enabled: false))
                     ])
 
             activeProfiles = ["profile1"]
@@ -455,7 +458,8 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         // Note: .satisfies requires casting the argument to Consumer - s. https://github.com/assertj/assertj/issues/2357
                 .satisfies((Consumer) {
                     it.content {
-                        assertThat((it as MavenRepositoryContentDescriptor).releasesOnly())
+                        assertThat(isReleasesOnly(it as MavenRepositoryContentDescriptor)).isTrue()
+                        assertThat(isSnapshotsOnly(it as MavenRepositoryContentDescriptor)).isFalse()
                     }
                 })
     }

@@ -20,10 +20,14 @@ import io.github.mhoffrog.gradle.maven.settings.utils.PluginResourcesUtil
 import org.apache.maven.settings.io.DefaultSettingsWriter
 import org.apache.maven.settings.io.SettingsWriter
 import org.gradle.api.Project
+import org.gradle.api.artifacts.repositories.MavenRepositoryContentDescriptor
+import org.gradle.api.internal.artifacts.repositories.DefaultMavenRepositoryContentDescriptor
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
+
+import java.lang.reflect.Field
 
 abstract class AbstractCommonMavenSettingsTest {
 
@@ -89,6 +93,26 @@ abstract class AbstractCommonMavenSettingsTest {
         project.configure(mavenSettings, configureClosure)
         SettingsWriter writer = new DefaultSettingsWriter()
         writer.write(mavenSettingsFile, null, mavenSettings)
+    }
+
+    boolean isSnapshotsOnly(MavenRepositoryContentDescriptor contentDescriptor) {
+        return isMavenRepositoryContentDescriptorField(contentDescriptor, 'snapshots') && !isMavenRepositoryContentDescriptorField(contentDescriptor, 'releases')
+    }
+
+    boolean isReleasesOnly(MavenRepositoryContentDescriptor contentDescriptor) {
+        return isMavenRepositoryContentDescriptorField(contentDescriptor, 'releases') && !isMavenRepositoryContentDescriptorField(contentDescriptor, 'snapshots')
+    }
+
+    private static boolean isMavenRepositoryContentDescriptorField(MavenRepositoryContentDescriptor contentDescriptor, String fieldName) {
+        if (contentDescriptor.class.name != DefaultMavenRepositoryContentDescriptor.class.name) {
+            return false
+        }
+        if (fieldName != 'releases' && fieldName != 'snapshots') {
+            return false
+        }
+        Field field = contentDescriptor.class.getDeclaredField(fieldName)
+        field.setAccessible(true)
+        return (boolean) field.get(contentDescriptor)
     }
 
 }
