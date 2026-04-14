@@ -366,7 +366,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                 "custom1")
 
         assertThat(project.repositories
-                .findAll { it instanceof MavenArtifactRepository }
+                .withType(MavenArtifactRepository)
                 .collect { (it as MavenArtifactRepository).url.toString() })
                 .contains(
                         "https://repo.maven.apache.org/maven2/",
@@ -463,4 +463,52 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
                 })
     }
 
+    @Test
+    void resolvePropertiesInRepoNameAndUrl() {
+        def props = new Properties()
+        props.setProperty('repoId', 'myTestRepo')
+        props.setProperty('repoUrl', 'https://myTestHost/myTestRepo')
+        props.setProperty('repoUrl2', 'https://myTestHost/myTestRepo2')
+
+        withMavenSettings {
+            servers.add new Server(id: 'myTestRepo', username: TEST_USER_NAME, password: TEST_USER_PASSWORD)
+            servers.add new Server(id: 'myFixRepoId', username: TEST_USER_NAME + '2', password: TEST_USER_PASSWORD + '2')
+            profiles.add new Profile(id: TEST_PROFILE_ID, properties: props)
+        }
+
+        addPluginWithSettings()
+
+        project.with {
+            mavenSettings {
+                activeProfiles = [TEST_PROFILE_ID]
+            }
+
+            repositories {
+                maven {
+                    name = 'mavenSettings@repoId'
+                    url = 'https://mavenSettings@repoUrl'
+                }
+                maven {
+                    name = 'myFixRepoId'
+                    url = 'https://mavenSettings@repoUrl2'
+                }
+            }
+        }
+
+        project.evaluate()
+
+        assertThat(project.properties).containsEntry('repoId', 'myTestRepo')
+        assertThat(project.properties).containsEntry('repoUrl', 'https://myTestHost/myTestRepo')
+        assertThat(project.repositories.names).containsOnly('mavenSettings@repoId', 'myFixRepoId')
+        assertThat(project.repositories.withType(MavenArtifactRepository)
+                .collect { it.url.toString() })
+                .contains(
+                        new URI('https://myTestHost/myTestRepo').toString(),
+                        new URI('https://myTestHost/myTestRepo2').toString()
+                )
+        assertEquals(TEST_USER_NAME, project.repositories.getByName('mavenSettings@repoId').credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.repositories.getByName('mavenSettings@repoId').credentials.password)
+        assertEquals(TEST_USER_NAME + '2', project.repositories.myFixRepoId.credentials.username)
+        assertEquals(TEST_USER_PASSWORD + '2', project.repositories.myFixRepoId.credentials.password)
+    }
 }
