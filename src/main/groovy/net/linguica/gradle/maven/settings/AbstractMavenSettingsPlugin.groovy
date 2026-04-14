@@ -203,6 +203,11 @@ abstract class AbstractMavenSettingsPlugin {
             gradleRepository.mavenContent { content ->
                 boolean isReleaseEnabled = mavenRepository.releases == null || mavenRepository.releases.isEnabled()
                 boolean isSnapshotsEnabled = mavenRepository.snapshots == null || mavenRepository.snapshots.isEnabled()
+                if (!isReleaseEnabled && !isSnapshotsEnabled) {
+                    // Both releases and snapshots disabled - unusual configuration
+                    logger.warn("${logPrefix} Repository '${mavenRepository.id}' has both releases and snapshots disabled. This may indicate a configuration issue.")
+                    return
+                }
                 if (isReleaseEnabled && !isSnapshotsEnabled) {
                     content.releasesOnly()
                 }
