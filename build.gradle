@@ -40,9 +40,17 @@ tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+// Compile compatibility with Java 8 for both Java and Groovy sources
+// to ensure that the plugin can be used in Gradle builds running on Java 8
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-Xlint:-options'
+    options.release = "${project.targetCompatibility}".toInteger()
+}
+
+tasks.withType(GroovyCompile).configureEach {
+    options.compilerArgs << '-Xlint:-options'
+    sourceCompatibility = JavaVersion.toVersion("${project.sourceCompatibility}".toInteger())
+    targetCompatibility = JavaVersion.toVersion("${project.targetCompatibility}".toInteger())
 }
 
 // Get project properties as a Map for usage in processResources task to expand properties in **/*-expanded.properties files
