@@ -445,7 +445,6 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         addPluginWithSettings()
 
         project.with {
-            pluginManager.apply("maven-publish")
             repositories {
                 mavenCentral()
             }

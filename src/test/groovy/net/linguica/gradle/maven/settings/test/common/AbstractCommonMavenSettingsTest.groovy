@@ -26,10 +26,12 @@ import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.io.TempDir
-
-import java.lang.reflect.Field
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 abstract class AbstractCommonMavenSettingsTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommonMavenSettingsTest)
 
     protected static final String PLUGIN_ID = "${PluginResourcesUtil.pluginId}"
 
@@ -104,15 +106,18 @@ abstract class AbstractCommonMavenSettingsTest {
     }
 
     private static boolean isMavenRepositoryContentDescriptorField(MavenRepositoryContentDescriptor contentDescriptor, String fieldName) {
+        // instanceof does not work as the class may be loaded by a different classloader, so compare class names instead.
         if (contentDescriptor.class.name != DefaultMavenRepositoryContentDescriptor.class.name) {
             return false
         }
-        if (fieldName != 'releases' && fieldName != 'snapshots') {
-            return false
+        switch (fieldName) {
+            case 'releases':
+                return contentDescriptor.releases
+            case 'snapshots':
+                return contentDescriptor.snapshots
+            default:
+                throw new IllegalArgumentException("Unsupported field name: ${fieldName} of ${contentDescriptor.class.name} - Gradle internal API may have changed.")
         }
-        Field field = contentDescriptor.class.getDeclaredField(fieldName)
-        field.setAccessible(true)
-        return (boolean) field.get(contentDescriptor)
     }
 
 }
