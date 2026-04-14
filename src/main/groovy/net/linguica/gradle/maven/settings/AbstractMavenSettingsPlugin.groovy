@@ -47,7 +47,11 @@ import java.util.Map.Entry
 @CompileStatic
 abstract class AbstractMavenSettingsPlugin {
 
-    public static final String MAVEN_SETTINGS_EXTENSION_NAME = "mavenSettings"
+    public static final String MAVEN_SETTINGS_EXTENSION_NAME = 'mavenSettings'
+
+    public static final String MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX = MAVEN_SETTINGS_EXTENSION_NAME + '@'
+
+    public static final String MAVEN_SETTINGS_REPO_URL_PROPERTY_PREFIX = 'https://' + MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX
 
     private static final String LOG_PREFIX_TEMPLATE
 
@@ -82,17 +86,19 @@ abstract class AbstractMavenSettingsPlugin {
                     && !scopeUtilizer.publishingRepositoriesConfigured) {
                 logger.warn("${logPrefix} No repositories configured in ${scopeUtilizer.scopeName} scope. No repo credentials to apply.")
             } else {
+                resolvePropertiesForRepoNamesAndUrlsIfNeeded('PluginManagement', scopeUtilizer.pluginManagementRepositories)
+                resolvePropertiesForRepoNamesAndUrlsIfNeeded('DependencyResolution', scopeUtilizer.repositories)
+                resolvePropertiesForRepoNamesAndUrlsIfNeeded('Publishing', scopeUtilizer.publishingRepositories)
                 if (extension.isNonDefaultUserSettingsFileConfigured()) {
-                    [
-                            scopeUtilizer.pluginManagementRepositories,
-                            scopeUtilizer.repositories,
-                            scopeUtilizer.publishingRepositories
+                    [scopeUtilizer.pluginManagementRepositories,
+                     scopeUtilizer.repositories,
+                     scopeUtilizer.publishingRepositories
                     ].each { RepositoryHandler repos ->
                         applyMavenLocalFromUserSettingsFileConfigured(extension, repos)
                     }
                 }
-                registerMirrors(extension, scopeUtilizer.pluginManagementRepositories)
-                registerMirrors(extension, scopeUtilizer.repositories)
+                registerMirrors('PluginManagement', extension, scopeUtilizer.pluginManagementRepositories)
+                registerMirrors('DependencyResolution', extension, scopeUtilizer.repositories)
                 applyRepoCredentials('PluginManagement', scopeUtilizer.pluginManagementRepositories)
                 applyRepoCredentials('DependencyResolution', scopeUtilizer.repositories)
                 applyRepoCredentials('Publishing', scopeUtilizer.publishingRepositories)
@@ -247,17 +253,21 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private void registerMirrors(MavenSettingsPluginExtension extension, RepositoryHandler repositories) {
+    private void registerMirrors(final String repoContext, MavenSettingsPluginExtension extension, RepositoryHandler repositories) {
         List<MavenArtifactRepository> reposToRemove = []
         Map<String, Mirror> mirrorsToAdd = new HashMap<>()
         repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository) {
-                if (extension.mirrorExclusions.contains(repo.name)) {
-                    logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
+                final String effectiveRepoName = resolveRepoPropertyIfNeeded(repoContext, repo.name) ?: repo.name
+                if (effectiveRepoName != repo.name) {
+                    logger.info("${logPrefix} Resolved ${repoContext} repository name '${repo.name}' to '${effectiveRepoName}' for mirror lookup.")
+                }
+                if (extension.mirrorExclusions.contains(effectiveRepoName)) {
+                    logger.info("${logPrefix} Repository '${effectiveRepoName}' '${repo.url}' is excluded from mirror application by plugin configuration mirrorExclusions='${extension.mirrorExclusions.join(",")}'. Skipping.")
                 } else {
-                    Mirror mirror = findMirrorMatchingForRepo(repo)
+                    Mirror mirror = findMirrorMatchingForRepo(repoContext, repo, effectiveRepoName)
                     if (mirror) {
-                        logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
+                        logger.info("${logPrefix} Repository '${effectiveRepoName}' '${repo.url}' is being replaced by mirror located at ${mirror.url} according to mirrorOf '${mirror.mirrorOf}'.")
                         mirrorsToAdd.put(mirror.id, mirror)
                         reposToRemove.add(repo)
                     }
@@ -275,7 +285,7 @@ abstract class AbstractMavenSettingsPlugin {
         }
     }
 
-    private Mirror findMirrorMatchingForRepo(final MavenArtifactRepository repo) {
+    private Mirror findMirrorMatchingForRepo(final String repoContext, final MavenArtifactRepository repo, final String effectiveRepoName) {
         for (Mirror mirror : mavenSettings.mirrors) {
             Mirror mirrorFound = null
             boolean isBreakMirrorOf = false
@@ -302,11 +312,11 @@ abstract class AbstractMavenSettingsPlugin {
                         }
                         break
                     default:
-                        if (mirrorOf == repo.name) {
+                        if (mirrorOf == effectiveRepoName) {
                             mirrorFound = mirror
                             isBreakMirrorOf = true
-                        } else if (mirrorOf == "!${repo.name}") {
-                            logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' is excluded from mirror '${resolveMirrorName(mirror)}' at '${mirror.url}' by mirrorOf '!${repo.name}'. Skipping.")
+                        } else if (mirrorOf == "!${effectiveRepoName}") {
+                            logger.info("${logPrefix} Repository '${effectiveRepoName}' '${repo.url}' is excluded from mirror '${resolveMirrorName(mirror)}' at '${mirror.url}' by mirrorOf '!${repo.name}'. Skipping.")
                             mirrorFound = null
                             isBreakMirrorOf = true
                         }
@@ -316,19 +326,61 @@ abstract class AbstractMavenSettingsPlugin {
                 }
             }
             if (mirrorFound) {
-                logger.info("${logPrefix} Repository '${repo.name}' '${repo.url}' matches mirrorOf '${mirrorFound.mirrorOf}' in mirror '${resolveMirrorName(mirrorFound)}' at '${mirrorFound.url}'.")
+                logger.info("${logPrefix} Repository '${effectiveRepoName}' '${repo.url}' matches mirrorOf '${mirrorFound.mirrorOf}' in mirror '${resolveMirrorName(mirrorFound)}' at '${mirrorFound.url}'.")
                 return mirrorFound
             }
         }
         return null
     }
 
+    private void resolvePropertiesForRepoNamesAndUrlsIfNeeded(final String repoContext, @Nullable RepositoryHandler repositories) {
+        repositories?.each { repo ->
+            if (repo instanceof MavenArtifactRepository) {
+                String newUrl = resolveRepoPropertyIfNeeded(repoContext, repo.url.toString())
+                if (newUrl) {
+                    try {
+                        URI newURI = new URI(newUrl)
+                        logger.info("${logPrefix} Updated repository '${repo.name}' with URI '${newURI}'.")
+                        repo.url = newURI
+                    } catch (URISyntaxException e) {
+                        throw new IllegalArgumentException("${logPrefix} Resolved ${repoContext} repository URL value '${newUrl}' is not a valid URI.", e)
+                    }
+                }
+            }
+        }
+    }
+
+    private String resolveRepoPropertyIfNeeded(final String repoContext, final String repoPropertyWithPrefix) {
+        String propertyName = null
+        if (repoPropertyWithPrefix.startsWith(MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX)) {
+            propertyName = repoPropertyWithPrefix.substring(MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX.length())
+        } else if (repoPropertyWithPrefix.startsWith(MAVEN_SETTINGS_REPO_URL_PROPERTY_PREFIX)) {
+            propertyName = repoPropertyWithPrefix.substring(MAVEN_SETTINGS_REPO_URL_PROPERTY_PREFIX.length())
+        } else {
+            return null
+        }
+        if (!propertyName) {
+            throw new IllegalArgumentException("${logPrefix} ${repoContext} Repository '${repoPropertyWithPrefix}' starts with a repo property prefix but no property name is specified after the prefix.")
+        }
+        String propertyValue = scopeUtilizer.properties[propertyName]?.toString()
+        if (propertyValue) {
+            logger.info("${logPrefix} Resolved ${repoContext} repository property '${propertyName}' with value '${propertyValue}'.")
+            return propertyValue
+        } else {
+            throw new IllegalArgumentException("${logPrefix} Unable to resolve ${repoContext} repository property '${propertyName}' for '${repoPropertyWithPrefix}'. No such property found in Gradle ${scopeUtilizer.scopeName} properties.")
+        }
+    }
+
     private void applyRepoCredentials(String repoContext, @Nullable RepositoryHandler repositories) {
         repositories?.each { repo ->
             if (repo instanceof MavenArtifactRepository) {
                 logger.info("${logPrefix} ${repoContext} repository '${repo.name}' '${repo.url}' found.")
+                final String effectiveRepoName = resolveRepoPropertyIfNeeded(repoContext, repo.name) ?: repo.name
+                if (effectiveRepoName != repo.name) {
+                    logger.info("${logPrefix} Resolved ${repoContext} repository name '${repo.name}' to '${effectiveRepoName}' for credentials lookup.")
+                }
                 mavenSettings.servers.each { server ->
-                    if (repo.name == server.id) {
+                    if (effectiveRepoName == server.id) {
                         addCredentials(server, repo)
                     }
                 }
