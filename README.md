@@ -26,6 +26,8 @@ The plugin has been originally forked from https://github.com/rmanibus/gradle-ma
   `mirrorExclusions` property.
 - Apply `localRepository` from a `userSettingsFileName` configured settings file to the Gradle `MavenLocal` repo if
   `localRepository` is set in there. (Since plugin version `1.1.0`).
+- Resolution of repository name and/or repository URL from properties provided by `settings.xml`. (Since plugin version
+  `1.1.0`).
 
 ### Log Output
 
@@ -138,6 +140,32 @@ Repositories defined within active profiles will be added to the Gradle scope an
 them as well. Plugin repositories defined within active profiles will be added to the Gradle Settings scope
 pluginManagement repositories. The latter must be enabled explicitly via the `addPluginRepositories` property of the
 `mavenSettings {...}` configuration closure.
+
+### Resolution of properties in repository name and/or repository URL
+
+Properties defined in active profiles will be exported to the Gradle scope and can be used for repository names
+and for repository URL.
+For example, given the following profile definition in `settings.xml`:
+
+    <profiles>
+        <profile>
+            <id>myProfile</id>
+            <properties>
+                <repoName>myRepo</repoName>
+                <repoUrl>https://intranet.foo.org/repo</repoUrl>
+            </properties>
+        </profile>
+    </profiles>
+
+In a Gradle repository configuration these properties must be used with prefix `mavenSettings@`
+for the repository name and with prefix `https://mavenSettings@` for the repository URL as follows:
+
+    repositories {
+        maven {
+            name = 'mavenSettings@repoName' // property 'repoName' resolves to 'myRepo'
+            url = 'https://mavenSettings@repoUrl' // property 'repoUrl' resolves to 'https://intranet.foo.org/repo'
+        }
+    }
 
 ## Configuration
 
