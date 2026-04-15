@@ -117,7 +117,8 @@ gradlePlugin {
     }
 }
 
-
+boolean isSnapshotVersion = version.endsWith('-SNAPSHOT')
+logger.lifecycle('###### isSnapshotVersion: {}', isSnapshotVersion)
 publishing {
     // Enhance all publications with metadata for Maven Central
     // (e.g. pluginMaven, mavenSettingsPluginMarkerMaven, and any custom publications)
@@ -180,6 +181,18 @@ publishing {
             name = 'localJReleaserStaging'
             url = uri(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile)
         }
+        if (isSnapshotVersion
+                && System.getenv('JRELEASER_NEXUS2_USERNAME')
+                && (System.getenv('JRELEASER_NEXUS2_PASSWORD') || System.getenv('JRELEASER_NEXUS2_TOKEN'))) {
+            maven {
+                name = 'MavenCentralSnapshots'
+                url = 'https://central.sonatype.com/repository/maven-snapshots/'
+                credentials {
+                    username = System.getenv('JRELEASER_NEXUS2_USERNAME') ?: 'unknown'
+                    password = System.getenv('JRELEASER_NEXUS2_PASSWORD') ?: System.getenv('JRELEASER_NEXUS2_TOKEN') ?: 'unknown'
+                }
+            }
+        }
     }
 }
 
@@ -230,17 +243,19 @@ jreleaser {
                     stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
                 }
             }
-            nexus2 {
-                'snapshot-deploy' {
-                    active = 'SNAPSHOT'
-                    snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots/'
-                    applyMavenCentralRules = true
-                    snapshotSupported = true
-                    closeRepository = true
-                    releaseRepository = true
-                    stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
-                }
-            }
+            // !!! Snapshots are to be deployed by Gradle maven-publish plugin!
+            // !!! JReleaser nexus2 does not take care of merging content of an existing groupId:artifactId:maven-metadata.xml!
+            //nexus2 {
+            //    'snapshot-deploy' {
+            //        active = 'SNAPSHOT'
+            //        snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots/'
+            //        applyMavenCentralRules = true
+            //        snapshotSupported = true
+            //        closeRepository = true
+            //        releaseRepository = true
+            //        stagingRepository(layout.buildDirectory.dir("${stagingDeploySubDir}").get().asFile.path)
+            //    }
+            //}
         }
     }
 }
