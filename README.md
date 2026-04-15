@@ -157,13 +157,13 @@ For example, given the following profile definition in `settings.xml`:
         </profile>
     </profiles>
 
-In a Gradle repository configuration these properties must be used with prefix `mavenSettings@`
-for the repository name and with prefix `https://mavenSettings@` for the repository URL as follows:
+In a Gradle repository configuration these properties must be used with prefix `maven-settings.` for the repository name
+and with prefix `https://maven-settings.` for the repository URL as follows:
 
     repositories {
         maven {
-            name = 'mavenSettings@repoName' // property 'repoName' resolves to 'myRepo'
-            url = 'https://mavenSettings@repoUrl' // property 'repoUrl' resolves to 'https://intranet.foo.org/repo'
+            name = 'maven-settings.repoName' // property 'repoName' resolves to 'myRepo'
+            url = 'https://maven-settings.repoUrl' // property 'repoUrl' resolves to 'https://intranet.foo.org/repo'
         }
     }
 

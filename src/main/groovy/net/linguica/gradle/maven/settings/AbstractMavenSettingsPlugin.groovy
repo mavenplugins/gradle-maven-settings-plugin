@@ -49,7 +49,7 @@ abstract class AbstractMavenSettingsPlugin {
 
     public static final String MAVEN_SETTINGS_EXTENSION_NAME = 'mavenSettings'
 
-    public static final String MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX = MAVEN_SETTINGS_EXTENSION_NAME + '@'
+    public static final String MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX = 'maven-settings.'
 
     public static final String MAVEN_SETTINGS_REPO_URL_PROPERTY_PREFIX = 'https://' + MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX
 
