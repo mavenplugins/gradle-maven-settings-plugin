@@ -38,7 +38,6 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
-import org.gradle.api.plugins.ExtensionContainer
 import org.gradle.api.plugins.ExtraPropertiesExtension
 
 import javax.annotation.Nullable
@@ -49,7 +48,9 @@ abstract class AbstractMavenSettingsPlugin {
 
     public static final String MAVEN_SETTINGS_EXTENSION_NAME = 'mavenSettings'
 
-    public static final String MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX = 'maven-settings.'
+    public static final String MAVEN_SETTINGS_PROFILE_PROPERTY_PREFIX = 'maven-settings.'
+
+    public static final String MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX = MAVEN_SETTINGS_PROFILE_PROPERTY_PREFIX
 
     public static final String MAVEN_SETTINGS_REPO_URL_PROPERTY_PREFIX = 'https://' + MAVEN_SETTINGS_REPO_NAME_PROPERTY_PREFIX
 
@@ -167,15 +168,16 @@ abstract class AbstractMavenSettingsPlugin {
     }
 
     private void applyProfile(Profile profile, MavenSettingsPluginExtension extension) {
+        final ExtraPropertiesExtension extraPropertiesExtension = scopeUtilizer.extensions.getByType(ExtraPropertiesExtension)
         logger.info("${logPrefix} Applying Maven profile ${profile.id}:")
         for (Entry entry : profile.properties) {
-            ExtensionContainer extensions = scopeUtilizer.extensions
             if (logger.isDebugEnabled()) {
                 logger.debug("${logPrefix}   Applying property '${entry.key}' with value '${entry.value}'.")
             } else {
                 logger.info("${logPrefix}   Applying property '${entry.key}'.")
             }
-            extensions.getByType(ExtraPropertiesExtension).set(entry.key.toString(), entry.value.toString())
+            extraPropertiesExtension.set(entry.key.toString(), entry.value.toString())
+            extraPropertiesExtension.set(MAVEN_SETTINGS_PROFILE_PROPERTY_PREFIX + entry.key.toString(), entry.value.toString())
         }
 
         if (extension.addRepositories) {
