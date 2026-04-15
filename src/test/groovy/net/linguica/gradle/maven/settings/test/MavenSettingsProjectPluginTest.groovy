@@ -485,12 +485,12 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
             repositories {
                 maven {
-                    name = 'mavenSettings@repoId'
-                    url = 'https://mavenSettings@repoUrl'
+                    name = 'maven-settings.repoId'
+                    url = 'https://maven-settings.repoUrl'
                 }
                 maven {
                     name = 'myFixRepoId'
-                    url = 'https://mavenSettings@repoUrl2'
+                    url = 'https://maven-settings.repoUrl2'
                 }
             }
         }
@@ -499,15 +499,15 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
 
         assertThat(project.properties).containsEntry('repoId', 'myTestRepo')
         assertThat(project.properties).containsEntry('repoUrl', 'https://myTestHost/myTestRepo')
-        assertThat(project.repositories.names).containsOnly('mavenSettings@repoId', 'myFixRepoId')
+        assertThat(project.repositories.names).containsOnly('maven-settings.repoId', 'myFixRepoId')
         assertThat(project.repositories.withType(MavenArtifactRepository)
                 .collect { it.url.toString() })
                 .contains(
                         new URI('https://myTestHost/myTestRepo').toString(),
                         new URI('https://myTestHost/myTestRepo2').toString()
                 )
-        assertEquals(TEST_USER_NAME, project.repositories.getByName('mavenSettings@repoId').credentials.username)
-        assertEquals(TEST_USER_PASSWORD, project.repositories.getByName('mavenSettings@repoId').credentials.password)
+        assertEquals(TEST_USER_NAME, project.repositories.getByName('maven-settings.repoId').credentials.username)
+        assertEquals(TEST_USER_PASSWORD, project.repositories.getByName('maven-settings.repoId').credentials.password)
         assertEquals(TEST_USER_NAME + '2', project.repositories.myFixRepoId.credentials.username)
         assertEquals(TEST_USER_PASSWORD + '2', project.repositories.myFixRepoId.credentials.password)
     }
