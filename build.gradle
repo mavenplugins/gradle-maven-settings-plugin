@@ -2,12 +2,12 @@ plugins {
     id 'groovy'
     id 'maven-publish'
     //id 'java-gradle-plugin'
-    id 'com.gradle.plugin-publish' version '2.1.1' // implies 'java-gradle-plugin'
-    id 'org.jreleaser' version '1.23.0'
+    id 'com.gradle.plugin-publish' version "$publishPluginVersion" // implies 'java-gradle-plugin'
+    id 'org.jreleaser' version "$jreleaserPluginVersion"
 }
 
 ext {
-    mavenVersion = '3.9.14'
+    mavenVersion = "$mavenVersion"
 }
 
 repositories {
@@ -22,12 +22,12 @@ dependencies {
     implementation "org.apache.maven:maven-model-builder:$mavenVersion"
     implementation "org.apache.maven:maven-model:$mavenVersion"
     implementation "org.apache.maven:maven-core:$mavenVersion"
-    implementation 'org.codehaus.plexus:plexus-cipher:2.0'
-    implementation 'org.codehaus.plexus:plexus-sec-dispatcher:2.0'
+    implementation "org.codehaus.plexus:plexus-cipher:$plexusVersion"
+    implementation "org.codehaus.plexus:plexus-sec-dispatcher:$plexusVersion"
 
-    testImplementation 'org.assertj:assertj-core:3.27.7'
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
     // JUnit 5 BOM pom to manage JUnit 5 dependencies versions in one place
-    testImplementation platform('org.junit:junit-bom:5.14.3')
+    testImplementation platform("org.junit:junit-bom:$junitVersion")
     testImplementation 'org.junit.jupiter:junit-jupiter'
     // required for functional tests with GradleRunner:
     testImplementation gradleTestKit()
@@ -65,6 +65,9 @@ processResources {
 
 // Logger var for usage within other definition scopes
 Logger projectLogger = project.logger
+
+boolean isSnapshotVersion = version.endsWith('-SNAPSHOT')
+projectLogger.lifecycle('> Is {} build', isSnapshotVersion ? 'SNAPSHOT' : 'release')
 
 // Unused variable for potential future use in conditional logic (e.g. jreleaser release configuration)
 //boolean isReleaseBuild = !project.version.endsWith("-SNAPSHOT")
@@ -117,8 +120,6 @@ gradlePlugin {
     }
 }
 
-boolean isSnapshotVersion = version.endsWith('-SNAPSHOT')
-logger.lifecycle('###### isSnapshotVersion: {}', isSnapshotVersion)
 publishing {
     // Enhance all publications with metadata for Maven Central
     // (e.g. pluginMaven, mavenSettingsPluginMarkerMaven, and any custom publications)
@@ -129,7 +130,7 @@ publishing {
             // from components.java
             withType(MavenPublication) {
                 // Enhance/update metadata to all publications (including mavenPlugin publication created by java-gradle-plugin)
-                projectLogger.info("###### Common customization of publication ${it.name} ...")
+                projectLogger.lifecycle("> Common custom configuration of publication {} ...", it.name)
                 pom {
                     name = "${pluginDisplayName}"
                     description = "${pluginDescription}"
@@ -159,7 +160,7 @@ publishing {
             } // end of withType(MavenPublication)
             pluginMaven {
                 // Customize plugin .jar related publication here
-                projectLogger.info("###### Specific customization of publication ${name} ...")
+                projectLogger.lifecycle("> Custom configuration of publication {} ...", name)
                 pom {
                     name = "${pluginDisplayName} (plugin jar artifact)"
                 }
@@ -167,7 +168,7 @@ publishing {
             // <plugin name from gradlePlugin.plugins configuration>PluginMarkerMaven
             mavenSettingsPluginMarkerMaven {
                 // Customize marker publication of mavenSettings here
-                projectLogger.info("###### Specific customization of publication ${name} ...")
+                projectLogger.lifecycle("> Custom configuration of publication {} ...", name)
                 pom {
                     //name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
                     name = "${pluginDisplayName}"
