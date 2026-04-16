@@ -130,9 +130,9 @@ The plugin will also attempt to apply credentials to repositories configured usi
 
 Profiles defined in a `settings.xml` will have their properties exported to the Gradle project when the profile is
 considered active. Active profiles are those listed in the `<activeProfiles>` section of the `settings.xml`, the
-`activeProfiles`
-property of the `mavenSettings {...}` configuration closure, or those that satisfy the given profile's `<activation>`
-criteria.
+`activeProfiles` property of the `mavenSettings {...}` configuration closure, or those that satisfy the given profile's
+`<activation>` criteria. Properties are exported with their original property key and with an additional property key
+prefixed with `maven-settings.` to avoid probable conflicts with existing Gradle properties.
 
 ### Repositories
 
