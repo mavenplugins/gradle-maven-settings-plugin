@@ -1,7 +1,8 @@
 plugins {
     id 'groovy'
     id 'maven-publish'
-    //id 'java-gradle-plugin'
+    id 'signing'
+    //id 'java-gradle-plugin' // implied by 'com.gradle.plugin-publish'
     id 'com.gradle.plugin-publish' version "$publishPluginVersion" // implies 'java-gradle-plugin'
     id 'org.jreleaser' version "$jreleaserPluginVersion"
 }
@@ -118,6 +119,19 @@ gradlePlugin {
             implementationClass = 'net.linguica.gradle.maven.settings.MavenSettingsPlugin'
         }
     }
+}
+
+signing {
+    required = {
+        isSnapshotVersion // signing of release version will be done by jreleaser
+                && gradle.taskGraph.hasTask('publish')
+                && System.getenv('JRELEASER_GPG_SECRET_KEY')
+                && System.getenv('JRELEASER_GPG_PASSPHRASE')
+    }
+    useInMemoryPgpKeys(
+            System.getenv('JRELEASER_GPG_SECRET_KEY'),
+            System.getenv('JRELEASER_GPG_PASSPHRASE')
+    )
 }
 
 publishing {
