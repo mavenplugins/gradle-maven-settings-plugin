@@ -8,6 +8,10 @@ on:
         required: false
         type: boolean
         description: "Run jreleaserDeploy with --dryrun."
+      autoPublish:
+        required: false
+        type: boolean
+        description: "Automatically publish the staged artifacts to MavenCentral after upload."
       gradleWarnAll:
         required: false
         type: boolean
@@ -43,6 +47,12 @@ jobs:
             OPT_JRELEASER_DRY_RUN=""
           fi
           echo "OPT_JRELEASER_DRY_RUN=${OPT_JRELEASER_DRY_RUN}" >> $GITHUB_ENV
+          if [[ "${{ inputs.autoPublish }}" == "true" ]]; then
+            OPT_JRELEASER_MAVENCENTRAL_STAGE="FULL"
+          else
+            OPT_JRELEASER_MAVENCENTRAL_STAGE="UPLOAD"
+          fi
+          echo "OPT_JRELEASER_MAVENCENTRAL_STAGE=${OPT_JRELEASER_MAVENCENTRAL_STAGE}" >> $GITHUB_ENV
           if [[ "${{ inputs.gradleWarnAll }}" == "true" ]]; then
             OPT_GRADLE_CLI_WARN_ALL="--warning-mode all"
           else
@@ -57,9 +67,10 @@ jobs:
           echo "  workdir:                $(pwd)"
           echo "  homedir:                ${HOME}"
           echo "  inputs.runner:          ${{ inputs.runner }}"
+          echo "  inputs.autoPublish:     ${{ inputs.autoPublish }}"
           echo "  env.OPT_JRELEASER_DRY_RUN:   ${{ env.OPT_JRELEASER_DRY_RUN }}"
           echo "  env.OPT_GRADLE_CLI_WARN_ALL: ${{ env.OPT_GRADLE_CLI_WARN_ALL }}"
-
+          echo "  env.OPT_JRELEASER_MAVENCENTRAL_STAGE: ${{ env.OPT_JRELEASER_MAVENCENTRAL_STAGE }}"
       - name: Checkout code
         uses: actions/checkout@v6
         #  with:
@@ -104,7 +115,7 @@ jobs:
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.OSSRH_GPG_PUBLIC_KEY }}
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-          JRELEASER_MAVENCENTRAL_STAGE: 'UPLOAD'
+          JRELEASER_MAVENCENTRAL_STAGE: ${{ env.OPT_JRELEASER_MAVENCENTRAL_STAGE }}
           JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: |
