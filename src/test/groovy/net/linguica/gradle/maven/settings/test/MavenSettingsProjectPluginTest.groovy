@@ -199,6 +199,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
+        assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY_PREFIX + TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
     }
 
     @Test
@@ -221,6 +222,7 @@ class MavenSettingsProjectPluginTest extends AbstractMavenSettingsTest {
         project.evaluate()
 
         assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
+        assertThat(project.properties).containsEntry(TEST_PROPERTY_KEY_PREFIX + TEST_PROPERTY_KEY, TEST_PROPERTY_VALUE)
     }
 
     @Test

@@ -43,6 +43,7 @@ abstract class AbstractCommonMavenSettingsTest {
     static final String TEST_PROPERTY_VALUE = 'true'
     static final String TEST_USER_NAME = 'first.last'
     static final String TEST_USER_PASSWORD = 'secret'
+    static final String TEST_PROPERTY_KEY_PREFIX = 'maven-settings.'
 
     Project project
     URI gradleRuntimeDefaultMavenLocalURI
