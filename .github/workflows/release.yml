@@ -1,0 +1,194 @@
+# Inspired by https://github.com/bright/spring-modulith-gcp/blob/main/.github/workflows/release.yml
+name: Release to MavenCentral
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkVersioningOnly:
+        required: false
+        type: boolean
+        description: "Check version calculation only."
+        default: true
+      jreleaserDryRun:
+        required: false
+        type: boolean
+        description: "Run jreleaserDeploy with --dryrun."
+      gradleWarnAll:
+        required: false
+        type: boolean
+        description: "Run gradle commands with --warning-mode all."
+      autoPublish:
+        required: false
+        type: boolean
+        description: "Automatically publish the staged artifacts to MavenCentral after upload."
+        default: true
+#      version:
+#        description: 'Release version'
+#        required: true
+#        default: '0.1.0'
+#      next_version:
+#        description: 'Next development version'
+#        required: true
+#        default: '0.1.1-SNAPSHOT'
+
+permissions:
+  #contents: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Propagate env from inputs
+        run: |
+          if [[ "${{ inputs.jreleaserDryRun }}" == "true" ]]; then
+            OPT_JRELEASER_DRY_RUN="--dryrun"
+          else
+            OPT_JRELEASER_DRY_RUN=""
+          fi
+          echo "OPT_JRELEASER_DRY_RUN=${OPT_JRELEASER_DRY_RUN}" >> $GITHUB_ENV
+          if [[ "${{ inputs.autoPublish }}" == "true" ]]; then
+            OPT_JRELEASER_MAVENCENTRAL_STAGE="FULL"
+          else
+            OPT_JRELEASER_MAVENCENTRAL_STAGE="UPLOAD"
+          fi
+          echo "OPT_JRELEASER_MAVENCENTRAL_STAGE=${OPT_JRELEASER_MAVENCENTRAL_STAGE}" >> $GITHUB_ENV
+          if [[ "${{ inputs.gradleWarnAll }}" == "true" ]]; then
+            OPT_GRADLE_CLI_WARN_ALL="--warning-mode all"
+          else
+            OPT_GRADLE_CLI_WARN_ALL=""
+          fi
+          echo "OPT_GRADLE_CLI_WARN_ALL=${OPT_GRADLE_CLI_WARN_ALL}" >> $GITHUB_ENV
+
+      - name: Log Environment
+        run: |
+          echo "  github.event_name:           ${{ github.event_name }}"
+          echo "  github.ref:                  ${{ github.ref }}"
+          echo "  workdir:                     $(pwd)"
+          echo "  homedir:                     ${HOME}"
+          echo "  inputs.runner:               ${{ inputs.runner }}"
+          echo "  inputs.checkVersioningOnly:  ${{ inputs.checkVersioningOnly }}"
+          echo "  inputs.jreleaserDryRun:      ${{ inputs.jreleaserDryRun }}"
+          echo "  inputs.gradleWarnAll:        ${{ inputs.gradleWarnAll }}"
+          echo "  inputs.autoPublish:          ${{ inputs.autoPublish }}"
+          echo "  env.OPT_JRELEASER_DRY_RUN:   ${{ env.OPT_JRELEASER_DRY_RUN }}"
+          echo "  env.OPT_GRADLE_CLI_WARN_ALL: ${{ env.OPT_GRADLE_CLI_WARN_ALL }}"
+          echo "  env.OPT_JRELEASER_MAVENCENTRAL_STAGE: ${{ env.OPT_JRELEASER_MAVENCENTRAL_STAGE }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          #fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.SERVICE_USER_PAT }}
+
+      - name: Ensure util scripts are executable
+        run: |
+          chmod +x .github/workflows/utils/*.sh
+
+      - name: Calculate versions
+        id: versions
+        shell: bash
+        run: |
+          # Extract the version from gradle.properties, removing any trailing whitespace
+          CURRENT_VERSION=$(sed -n -r 's/^( *version *= *)([a-zA-Z0-9.-]*) *.*$/\2/p' gradle.properties)
+          if [[ ! "${CURRENT_VERSION}" == *-SNAPSHOT ]]; then
+            echo "ERROR: Current version '${CURRENT_VERSION}' is not a SNAPSHOT version."
+            exit 1
+          fi
+          RELEASE_VERSION="${CURRENT_VERSION%*-SNAPSHOT}"
+          NEXT_VERSION="$(./.github/workflows/utils/next_version.sh ${RELEASE_VERSION})"
+          if [[ -z "${NEXT_VERSION}" || "${NEXT_VERSION}" == "invalid" ]]; then
+            echo "### ERROR: RELEASE_VERSION '${RELEASE_VERSION}' is not of format major[.minor[.patch[.build]]]"
+            exit 1
+          fi
+          echo "version=${CURRENT_VERSION}" >> $GITHUB_OUTPUT
+          echo "release=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "next=${NEXT_VERSION}" >> $GITHUB_OUTPUT
+          echo "nextdev=${NEXT_VERSION}-SNAPSHOT" >> $GITHUB_OUTPUT
+
+      - name: Log versions
+        run: |
+          echo "Current version:  '${{ steps.versions.outputs.version }}'"
+          echo "Release version:  '${{ steps.versions.outputs.release }}'"
+          echo "Next dev version: '${{ steps.versions.outputs.nextdev }}'"
+
+      - name: Commit release version
+        env:
+          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+        run: |
+          # Configure git user for commit
+          git config user.name "GitHub CICD"
+          git config user.email "${{ github.repository_owner }}@users.noreply.github.com"
+          # Update version in gradle.properties to the release version
+          sed -i -r 's/^( *version *= *)([a-zA-Z0-9.-]*) *.*$/\1'"${RELEASE_VERSION}"'/g' gradle.properties
+          echo ">>>>>>>>>>>>>>>>> gradle.properties after update >>>>>>>>>>>>>>>"
+          cat gradle.properties
+          echo "<<<<<<<<<<<<<<<<< gradle.properties after update <<<<<<<<<<<<<<<"
+          # Commit and tag if there are changes
+          if [[ -n $(git status --porcelain) ]]; then
+            git add -A
+            git commit -am "Release version ${RELEASE_VERSION}"
+            git tag -a "v${RELEASE_VERSION}" -m "Release version ${RELEASE_VERSION}"
+          fi
+
+      - name: Setup Java
+        id: setup-java
+        if: ${{ !inputs.checkVersioningOnly }}
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: zulu
+          cache: gradle
+
+      - name: Build and test
+        if: ${{ !inputs.checkVersioningOnly }}
+        run: |
+          ./gradlew build -S ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+
+      - name: Publish to Local Maven Staging
+        if: ${{ !inputs.checkVersioningOnly }}
+        run: |
+          ./gradlew publish -S --info ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+
+      - name: Deploy
+        if: ${{ !inputs.checkVersioningOnly }}
+        env:
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_PASSPHRASE }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.OSSRH_GPG_PUBLIC_KEY }}
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          JRELEASER_MAVENCENTRAL_STAGE: ${{ env.OPT_JRELEASER_MAVENCENTRAL_STAGE }}
+          JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+        run: |
+          ./gradlew jreleaserDeploy -S --info ${{ env.OPT_JRELEASER_DRY_RUN }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+
+      - name: Update to next development version
+        env:
+          NEXT_DEV_VERSION: ${{ steps.versions.outputs.nextdev }}
+        run: |
+          # Update version in gradle.properties to the next dev version
+          sed -i -r 's/^( *version *= *)([a-zA-Z0-9.-]*) *.*$/\1'"${NEXT_DEV_VERSION}"'/g' gradle.properties
+          echo ">>>>>>>>>>>>>>>>> gradle.properties after update >>>>>>>>>>>>>>>"
+          cat gradle.properties
+          echo "<<<<<<<<<<<<<<<<< gradle.properties after update <<<<<<<<<<<<<<<"
+          # Commit changes
+          if [[ -n $(git status --porcelain) ]]; then
+            git add -A
+            git commit -am "Next development version ${NEXT_DEV_VERSION}"
+          fi
+          if [[    "${{ inputs.checkVersioningOnly }}" == "false"
+                && "${{ inputs.jreleaserDryRun }}" == "false" ]]; then
+            git push origin "${{ github.ref_name }}"
+            git push --tags origin
+          else
+            echo "Dry run mode - skip pushing to remote."
+          fi
