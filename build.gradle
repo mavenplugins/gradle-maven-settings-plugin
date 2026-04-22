@@ -121,6 +121,7 @@ gradlePlugin {
     }
 }
 
+
 signing {
     required = {
         isSnapshotVersion // signing of release version will be done by jreleaser
@@ -134,9 +135,10 @@ signing {
     )
 }
 
+
 publishing {
     // Enhance all publications with metadata for Maven Central
-    // (e.g. pluginMaven, mavenSettingsPluginMarkerMaven, and any custom publications)
+    // (e.g. pluginMaven, *PluginMarkerMaven, and any custom publications)
     // Note: afterEvaluate is necessary since java-gradle-plugin creates its publications in an afterEvaluate callback
     afterEvaluate {
         publications {
@@ -144,7 +146,7 @@ publishing {
             // from components.java
             withType(MavenPublication) {
                 // Enhance/update metadata to all publications (including mavenPlugin publication created by java-gradle-plugin)
-                projectLogger.lifecycle("> Common custom configuration of publication {} ...", it.name)
+                projectLogger.lifecycle("> Common configuration of publication {} ...", it.name)
                 pom {
                     name = "${pluginDisplayName}"
                     description = "${pluginDescription}"
@@ -171,23 +173,22 @@ publishing {
                         url = "${pluginWebSiteUrlAsString}"
                     }
                 }
+                if (it.name == 'pluginMaven') {
+                    // Configure plugin .jar related publication here
+                    projectLogger.lifecycle("> Specific configuration of publication {} ...", it.name)
+                    pom {
+                        name = "${pluginDisplayName} (plugin jar artifact)"
+                    }
+                }
+                if (it.name.endsWith('PluginMarkerMaven')) {
+                    // Configure marker publication of plugin here
+                    projectLogger.lifecycle("> Specific configuration of publication {} ...", it.name)
+                    pom {
+                        //name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
+                        name = "${pluginDisplayName}"
+                    }
+                }
             } // end of withType(MavenPublication)
-            pluginMaven {
-                // Customize plugin .jar related publication here
-                projectLogger.lifecycle("> Custom configuration of publication {} ...", name)
-                pom {
-                    name = "${pluginDisplayName} (plugin jar artifact)"
-                }
-            }
-            // <plugin name from gradlePlugin.plugins configuration>PluginMarkerMaven
-            mavenSettingsPluginMarkerMaven {
-                // Customize marker publication of mavenSettings here
-                projectLogger.lifecycle("> Custom configuration of publication {} ...", name)
-                pom {
-                    //name = "${pluginDisplayName} (${((String) name).replace('PluginMarkerMaven', '')} marker artifact)"
-                    name = "${pluginDisplayName}"
-                }
-            }
         }
     }
     repositories {
@@ -203,8 +204,8 @@ publishing {
                 name = 'MavenCentralSnapshots'
                 url = 'https://central.sonatype.com/repository/maven-snapshots/'
                 credentials {
-                    username = System.getenv('JRELEASER_NEXUS2_USERNAME') ?: 'unknown'
-                    password = System.getenv('JRELEASER_NEXUS2_PASSWORD') ?: System.getenv('JRELEASER_NEXUS2_TOKEN') ?: 'unknown'
+                    username = System.getenv('JRELEASER_NEXUS2_USERNAME')
+                    password = System.getenv('JRELEASER_NEXUS2_PASSWORD') ?: System.getenv('JRELEASER_NEXUS2_TOKEN')
                 }
             }
         }
