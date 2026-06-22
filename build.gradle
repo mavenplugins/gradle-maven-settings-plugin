@@ -8,6 +8,7 @@ plugins {
 }
 
 ext {
+    pluginId = "${group}.${rootProject.name}" //Set Plugin ID as this projects Maven groupId.artifactId:
     mavenVersion = "$mavenVersion"
 }
 
@@ -55,12 +56,22 @@ tasks.withType(GroovyCompile).configureEach {
 }
 
 // Get project properties as a Map for usage in processResources task to expand properties in **/*-expanded.properties files
-// to fix Gradle 9 deprecation warning about calling project in processResources during runtime
-Map projectProperties = project.properties
+// to fix Gradle 9 deprecation warning about calling project in processResources during runtime.
+Map expandedResourceProperties = [
+        pluginVersion       : project.version.toString(),
+        pluginGroup         : project.group.toString(),
+        rootProjectName     : rootProject.name,
+        pluginId            : pluginId.toString(),
+        pluginBuildDirectory: layout.buildDirectory.get().asFile.absolutePath.replace('\\', '/'),
+        mavenVersion        : project.mavenVersion.toString(),
+        gitCommitId         : providers.gradleProperty('git.commit.id').orElse('0000000').get()
+]
 
 processResources {
+    // Explicitly declare values used by expand for stable and cache-friendly inputs.
+    inputs.properties(expandedResourceProperties)
     filesMatching("**/*-expanded.properties") { FileCopyDetails details ->
-        expand projectProperties
+        expand expandedResourceProperties
     }
 }
 
@@ -96,9 +107,6 @@ String pluginOrganizationUrlAsString = 'https://github.com/mavenplugins'
 // Note: repo URL must not end with '.git' and must not end with '/'
 String pluginRepoUrlAsString = 'https://github.com/mavenplugins/gradle-maven-settings-plugin'
 
-
-//Set Plugin ID as this projects Maven groupId.artifactId:
-properties.ext.pluginId = "${group}.${rootProject.name}"
 
 gradlePlugin {
     website = "${pluginWebSiteUrlAsString}"
