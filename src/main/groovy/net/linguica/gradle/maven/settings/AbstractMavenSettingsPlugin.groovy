@@ -67,7 +67,10 @@ abstract class AbstractMavenSettingsPlugin {
     private Logger logger
 
     static {
-        LOG_PREFIX_TEMPLATE = "${PluginResourcesUtil.pluginNameInLogPrefix}[${LOG_PREFIX_SCOPE_TOKEN}] v${PluginResourcesUtil.pluginVersion}:"
+        final String pluginVersion = PluginResourcesUtil.pluginVersion
+        final boolean isSnapshotVersion = pluginVersion.endsWith('-SNAPSHOT')
+        final String gitCommitId = PluginResourcesUtil.gitCommitIdShort
+        LOG_PREFIX_TEMPLATE = "${PluginResourcesUtil.pluginNameInLogPrefix}[${LOG_PREFIX_SCOPE_TOKEN}] v${pluginVersion}${(isSnapshotVersion && gitCommitId) ? " #${gitCommitId}" : ''}:"
     }
 
     void apply(IGradlePluginScopeUtilizer scopeUtilizerParam) {
