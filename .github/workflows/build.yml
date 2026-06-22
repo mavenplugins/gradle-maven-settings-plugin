@@ -104,7 +104,7 @@ jobs:
           [[ -z "${{ github.event.inputs.cloptions }}" ]] && options="-S" || options="${{ github.event.inputs.cloptions }}"
           # Continue on failed command:
           set +e
-          ./gradlew build ${options} -Pversion=${{ steps.version.outputs.currentBuildVersion }}
+          ./gradlew build ${options} -Pversion=${{ steps.version.outputs.currentBuildVersion }} -Pgit.commit.id=${{ github.sha }}
           if [[ "$?" == "0" ]]; then
             echo "isOk=true" >> $GITHUB_OUTPUT
             echo "Build SUCCEEDED"
