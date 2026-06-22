@@ -58,6 +58,20 @@ class PluginResourcesUtil {
         return getProperty("plugin.nameInLogPrefix", true)
     }
 
+    static String getPluginBuildDirectory() {
+        return getProperty("plugin.buildDirectory", true)
+    }
+
+    static String getGitCommitIdShort() {
+        String gitCommitIdFull = getGitCommitIdFull()
+        int shortLen = 7
+        return gitCommitIdFull ? gitCommitIdFull.substring(0, Math.min(shortLen, gitCommitIdFull.length())) : ''
+    }
+
+    static String getGitCommitIdFull() {
+        return getProperty("git.commit.id", false) ?: ''
+    }
+
     static String getProperty(String key, boolean isMandatory = false) {
         String ret = pluginProperties.getProperty(key)
         if (!ret && isMandatory) {
