@@ -131,8 +131,8 @@ jobs:
           echo "Deploy to Maven Central Snapshots ..."
           set +e
           # Note: For now SNAPSHOTs are not to be deployed by a jreleaser task.
-          #./gradlew publish jreleaserDeploy -S --info -Pversion=${{ steps.version.outputs.currentBuildVersion }}
-          ./gradlew publish -S --info -Pversion=${{ steps.version.outputs.currentBuildVersion }}
+          #./gradlew publish jreleaserDeploy -S --info -Pversion=${{ steps.version.outputs.currentBuildVersion }} -Pgit.commit.id=${{ github.sha }}
+          ./gradlew publish -S --info -Pversion=${{ steps.version.outputs.currentBuildVersion }} -Pgit.commit.id=${{ github.sha }}
           if [[ "$?" == "0" ]]; then
             echo "isOk=true" >> $GITHUB_OUTPUT
             echo "Deploy SUCCEEDED"

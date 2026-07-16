@@ -150,12 +150,12 @@ jobs:
       - name: Build and test
         if: ${{ !inputs.checkVersioningOnly }}
         run: |
-          ./gradlew build -S ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+          ./gradlew build -S -Pgit.commit.id=${{ github.sha }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       - name: Publish to Local Maven Staging
         if: ${{ !inputs.checkVersioningOnly }}
         run: |
-          ./gradlew publish -S --info ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+          ./gradlew publish -S --info -Pgit.commit.id=${{ github.sha }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       - name: Deploy
         if: ${{ !inputs.checkVersioningOnly }}
@@ -169,7 +169,7 @@ jobs:
           JRELEASER_NEXUS2_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           JRELEASER_NEXUS2_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
         run: |
-          ./gradlew jreleaserDeploy -S --info ${{ env.OPT_JRELEASER_DRY_RUN }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
+          ./gradlew jreleaserDeploy -S --info -Pgit.commit.id=${{ github.sha }} ${{ env.OPT_JRELEASER_DRY_RUN }} ${{ env.OPT_GRADLE_CLI_WARN_ALL }}
 
       - name: Update to next development version
         env:
